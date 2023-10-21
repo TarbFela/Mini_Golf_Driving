@@ -6,17 +6,55 @@ import math
 import random
 import csv
 
+WallPieceLib = [
+    #piece type name, #number of walls, #tuples: proportional coords of line points (x0, y0, x1, y1)
+    ["0Empty",0],
+    ["1DiagonalLowerLeft",1,(1,0),(0,1)],
+    ["2DiagonalUpperLeft",1,
+     (0,0),(1,1)
+    ],
+    ["3BottomRightCorner",3,
+    (0.5,0),(0.5,0.25), (0.5,0.25),(0.25,0.5), (0.25,0.5), (0,0.5)
+    ],
+    ["4BottomLeftCorner",3,
+    (1,0),(1,0.25), (1,0.25),(0.75,1), (0.75,1), (1,1)
+    ],
+    ["5UpperEdge",1,(0,0), (1,0)],
+    ["6LowerEdge",1,(0,1), (1,1)],
+    ["7LeftEdge",1,(0,0), (0,1)],
+    ["8RightEdge",1,(1,0), (1,1)],
+    ]
+
+css_to_nums_dict = {
+    "_" : 6,
+    "\\": 2,
+    "/" : 1,
+    "[" : 7,
+    "]" : 8,
+    "-" : 5,
+    "0":0,
+    ".":0
+}
+
+
+map_matrix = []
+#here is where we read the input CSV file for the map
+with open('game_map_1.csv', newline='') as csvfile:
+    spamreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
+    for i,row in enumerate(spamreader):
+        map_matrix.append([])
+        for num in row[0].replace(",",""):
+            map_matrix[i].append(css_to_nums_dict[num])
+
+
+
+
 pygame.init()
 pi = math.pi
-map_piece_gridding_size = 100
-
+map_piece_gridding_size = 70
 background_colour = (40,40,40)
 screen = pygame.display.set_mode((1200, 1200))
-pygame.display.set_caption('DRIVE AROUND AND HIT THE DAMN BALL (WSAD and SPACE and 1,2,3)')
-
-screen.fill(background_colour)
-pygame.display.flip()
-running = True
+pygame.display.set_caption('SEE THE MAP')
 
 # some snippets so that you can do sin(2) and it'll do sin(2pi)
 def sinpi(x):
@@ -194,11 +232,11 @@ class Sprite:
             pygame.draw.polygon(screen, rend_color, points)
     def render_as_ball(self):
         pygame.draw.circle(screen,self.s_color,(self.posx,self.posy),self.w/2,width=2)
-    def bounce(self,other,bounciness,bounds = 10,min_bounds=0):
+    def bounce(self,other,bounciness,bounds = 10):
         dist = math.sqrt( pow((self.posx - other.posx),2) + pow((self.posy - other.posy),2) )
-        if min_bounds< dist < bounds:
-            self.vx += bounciness * (self.posx - other.posx) / dist
-            self.vy += bounciness * (self.posy - other.posy) / dist
+        if dist < bounds:
+            self.vx += bounciness*(self.posx - other.posx)
+            self.vy += bounciness * (self.posy - other.posy)
             #self.s_color[0] +=1
             if self.ball_is_bounce == 0:
                 self.ball_is_bounce = 1
@@ -207,20 +245,14 @@ class Sprite:
                 return 0
         self.ball_is_bounce = 0
         return 0
-
-    in_the_hole_countdown = 0
-    def ball_hole_interaction(self,other):
-        other.bounce(self, bounciness=-0.00002, bounds=15,min_bounds=3) #sucks the ball in
+    def touching(self,other):
         dist = math.sqrt(pow((self.posx - other.posx), 2) + pow((self.posy - other.posy), 2))
         if dist < self.w and self.s_color != [0,255,0]:
-            self.in_the_hole_countdown +=1
-            #print(self.in_the_hole_countdown)
-            if self.in_the_hole_countdown > 5000:
-                print("in!")
-                self.s_color = [0,255,0]
+            print("in!")
+            self.s_color = [0,255,0]
             return 1
         else:
-            self.in_the_hole_countdown = 0
+            self.bounce(other, -1,bounds=3000)
             return 0
 
     def flip_vel(self, wx, wy, elasticity_co = 1):
@@ -246,35 +278,28 @@ class Sprite:
 
 
 
+
+'''map_matrix = [[1,5,5,5,5,2,6,0],
+              [7,0,1,0,0,0,8,0],
+              [7,3,0,0,0,0,1,0],
+              [7,0,0,2,0,1,0,0],
+              [2,6,6,6,1,0,0,0],
+              [1,1,1,1,1,1,1,1,1],
+              [0,0,0,0,0,0,0,0],
+              [0,0,0,0,0,0,0,0],
+              [0,0,0,0,0,0,0,0],
+              [0,0,0,0,0,0,0,0]
+              ]'''
+
+
 class MapPiece:
-    def __init__(self,index,rx,ry,grid_index_pair):
+    def __init__(self,index,rx,ry):
         self.lib_index = index
         self.relx = rx
         self.rely = ry
-        if isinstance(WallPieceLib[index][-1], str):
-            if WallPieceLib[index][-1] == "whole":
-                self.fill_mode = "whole"
-        elif index == 1 or index == 2:
-            self.fill_mode = "shape"
-            if map_matrix[grid_index_pair[0]+1][grid_index_pair[1]] == 9: #if the square below me is filled in
-                self.under_over = 0
-            else:
-                self.under_over = 1
-        else:
-            self.fill_mode = 0
-
-    def draw(self,wall_color=(220,220,220)):
+    def draw(self,color=(150,150,150)):
         index = self.lib_index
         b_c = (self.relx*map_piece_gridding_size, self.rely*map_piece_gridding_size) # bottom corner
-
-        if self.fill_mode == "whole":
-            self.fill_square(b_c,index)
-        if self.fill_mode == "shape":
-            self.fill_shape(b_c,index,under_over=self.under_over)
-
-        self.draw_line(b_c, index, wall_color)
-
-    def draw_line(self,b_c,index,color):
         for i in range(0, WallPieceLib[index][1]):
             x1 = float(WallPieceLib[index][2*i+2][0])*map_piece_gridding_size + b_c[0]
             y1 = float(WallPieceLib[index][2*i+2][1])*map_piece_gridding_size + b_c[1]
@@ -283,29 +308,8 @@ class MapPiece:
             pygame.draw.line(screen,color,
                              start_pos=(x1,y1),
                              end_pos=(x2,y2),
-                             width=4
+                             width=2
                              )
-    def fill_square(self,b_c,index):
-        pygame.draw.rect(screen, [104,189,58],rect=(
-            b_c[0],b_c[1],map_piece_gridding_size,map_piece_gridding_size
-        ))
-    def fill_shape(self,b_c,index,under_over): #only works for triangles at the moment (that is, ONE line)
-        under_over = 1- under_over
-        for i in range(0, WallPieceLib[index][1]):
-            x1 = float(WallPieceLib[index][2*i+2][0])*map_piece_gridding_size + b_c[0]
-            y1 = float(WallPieceLib[index][2*i+2][1])*map_piece_gridding_size + b_c[1]
-            x2 = float(WallPieceLib[index][2*i+3][0])*map_piece_gridding_size + b_c[0]
-            y2 = float(WallPieceLib[index][2*i+3][1])*map_piece_gridding_size + b_c[1]
-        pygame.draw.polygon(screen,[104,189,58],[
-            (b_c[0] + map_piece_gridding_size,b_c[1] + map_piece_gridding_size*under_over),
-            (x1,y1),
-            (x2,y2),
-        ])
-        pygame.draw.polygon(screen, [104, 189, 58], [
-            (b_c[0], b_c[1] + map_piece_gridding_size * under_over),
-            (x1, y1),
-            (x2, y2),
-        ])
     def wall_collision(self,other,coll_thresh):
         other_x = other.posx
         other_y = other.posy
@@ -334,96 +338,41 @@ class MapPiece:
 
         return 0,0
 
-
-WallPieceLib = [
-    #piece type name, #number of walls, #tuples: proportional coords of line points (x0, y0, x1, y1)
-    ["0Empty",0],
-    ["1DiagonalLowerLeft",1,(1,0),(0,1)],
-    ["2DiagonalUpperLeft",1,
-     (0,0),(1,1)
-    ],
-    ["3BottomRightCorner",3,
-    (0.5,0),(0.5,0.25), (0.5,0.25),(0.25,0.5), (0.25,0.5), (0,0.5)
-    ],
-    ["4BottomLeftCorner",3,
-    (1,0),(1,0.25), (1,0.25),(0.75,1), (0.75,1), (1,1)
-    ],
-    ["5UpperEdge",1,(0,0), (1,0)],
-    ["6LowerEdge",1,(0,1), (1,1)],
-    ["7LeftEdge",1,(0,0), (0,1)],
-    ["8RightEdge",1,(1,0), (1,1)],
-    ["9Green",0,"whole"]
-    ]
-
-css_to_nums_dict = {
-    "_" : 6,
-    "\\": 2,
-    "/" : 1,
-    "[" : 7,
-    "]" : 8,
-    "-" : 5,
-    "0":9,
-    ".":0
-}
-
-#READ MAP FILE
-map_matrix = []
-#here is where we read the input CSV file for the map
-with open('game_map_1.csv', newline='') as csvfile:
-    csvreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
-    for i,row in enumerate(csvreader):
-        map_matrix.append([])
-        j=0
-        for num in row[0].replace(",",""):
-            if num == "C":
-                car_starting_x = (j+0.5)*map_piece_gridding_size
-                car_starting_y = (i+0.5)*map_piece_gridding_size
-                map_matrix[i].append(css_to_nums_dict['0'])
-            elif num == "B":
-                ball_starting_x = (j+0.5)*map_piece_gridding_size
-                ball_starting_y = (i+0.5)*map_piece_gridding_size
-                map_matrix[i].append(css_to_nums_dict['0'])
-            elif num == "o":
-                hole_starting_x = (j+0.5)*map_piece_gridding_size
-                hole_starting_y = (i+0.5)*map_piece_gridding_size
-                map_matrix[i].append(css_to_nums_dict['0'])
-            else: map_matrix[i].append(css_to_nums_dict[num])
-            j+=1
-
-# THIS STUFF PUTS SOME SHAPES ON THE GRID. THE SIZE OF EACH SHAPE IS DETERMINED AT THE TOP IN MAP GRIDDING SHAPE,
-PIECES_LIST = [] #rows and columns
-for j,k in enumerate(map_matrix):
-    PIECES_LIST.append([])
-    for i,l in enumerate(map_matrix[j]):
-        PIECES_LIST[j].append( MapPiece(index=(map_matrix[j][i]),rx=i,ry=j,grid_index_pair=(j,i)))
-        PIECES_LIST[j][i].draw()
-
-
-
+screen.fill(background_colour)
+pygame.display.flip()
+running = True
 
 car_angle = 0
 
 CAR = Sprite()
 CAR.w = 20
 CAR.h = 12
-CAR.posx += car_starting_x
-CAR.posy += car_starting_y
 
 BALL = Sprite()
 BALL.shape = "circle"
 BALL.w = 10
 BALL.h = 10
-BALL.posx += ball_starting_x
-BALL.posy += ball_starting_y
+BALL.posx += 50
+BALL.posy += 50
 
 HOLE = Sprite()
 HOLE.shape = "circle"
 HOLE.w = 15
 HOLE.h = 15
-HOLE.posx += hole_starting_x
-HOLE.posy += hole_starting_y
+HOLE.posx += 100
+HOLE.posy += 500
+
 recent_bump = 0
 
+# THIS STUFF PUTS SOME SHAPES ON THE GRID. THE SIZE OF EACH SHAPE IS DETERMINED AT THE TOP IN MAP GRIDDING SHAPE,
+# THE WALL PIECE LIBRARY LIST DEFINES AVAILABLE SHAPES
+print("\n\n\n\t\tLINES 239 thru 244 CREATE THE CRAPPY GRID THAT WE HAVE HERE\n\n")
+PIECES_LIST = [] #rows and columns
+for j,k in enumerate(map_matrix):
+    PIECES_LIST.append([])
+    for i,l in enumerate(map_matrix[j]):
+        PIECES_LIST[j].append( MapPiece(index=(map_matrix[j][i]),rx=i,ry=j))
+        PIECES_LIST[j][i].draw()
 
 
 Car_Chunk_X, Car_Chunk_Y = CAR.chunk()
@@ -442,41 +391,11 @@ while running:
 
     #screen.fill(background_colour)
 
-    Inputs.input_actions(Inputs,CAR,not(recent_bump))
-
-    CAR.render(mode="erase")
-    BALL.render(shape="ball",mode="erase")
-
-    CAR.move()
-    BALL.move()
-    HOLE.ball_hole_interaction(BALL)
-
-
-    Car_Chunk_X, Car_Chunk_Y = CAR.chunk()
-    Ball_Chunk_X, Ball_Chunk_Y = BALL.chunk()
-
-
-
-    HOLE.render(shape="ball")
-    CAR.render()
-    BALL.render(shape="ball")
-    if(BALL.bounce(CAR,bounciness=0.01)) == 1:
-        BOUCNE_COUNTER += 1
-        #print("BOUCNE COUNTER:",BOUCNE_COUNTER)
-    BALL.accelerate(force=0,drag=0.0008)
-
-    #print(CAR.vx,CAR.vy)
-
+    for row in PIECES_LIST:
+        for piece in row:
+            piece.draw()
 
     pygame.display.flip()
-    for i in range(-1,2):
-        for j in range(-1,2):
-            PIECES_LIST[Car_Chunk_Y+i][Car_Chunk_X+j].wall_collision(CAR,0.5)
-            PIECES_LIST[Ball_Chunk_Y+i][Ball_Chunk_X+j].wall_collision(BALL, 0.2)
-            PIECES_LIST[Car_Chunk_Y + i][Car_Chunk_X + j].draw() #redraw car interactions
-    PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].draw(wall_color=(100, 255, 100)) #redraw ball interactions
-
-
 
         #CAR.reset_bump_timer()
     #if PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].wall_collision(BALL,4)[0] != 0:
