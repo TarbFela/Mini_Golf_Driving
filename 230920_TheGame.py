@@ -9,7 +9,7 @@ import sys
 
 pygame.init()
 pi = math.pi
-map_piece_gridding_size = 100
+map_piece_gridding_size = 80
 background_colour = (40,40,40)
 window_width = 800
 window_height = 800
