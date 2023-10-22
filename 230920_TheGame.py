@@ -94,7 +94,8 @@ class Inputs:
         self.spacebar = self.in_switches[4]
         target.accelerate(force=0,drag=0.001-self.spacebar*0.0006,sideways_drag=0.01-self.spacebar*0.008)
 
-        target.steering(steering_resistance=100, steering_target=(self.in_switches[4]*0.5+1)*(self.in_switches[3] - self.in_switches[2]))
+        target.steering(steering_resistance=100,
+                        steering_target=(self.in_switches[4]*0.5+1)*(self.in_switches[3] - self.in_switches[2])*(1-0.3*self.spacebar))
 
 def draw_rect_angle(surface, color, rect, angle, width=0):
     target_rect = pygame.Rect(rect)
@@ -218,7 +219,7 @@ class Sprite:
         ball_to_hole_dist = dist((self.posx, self.posy),(other.posx, other.posy))
 
         if ball_to_hole_dist<=next_dist:
-            other.bounce(self, bounciness=-0.01, bounds=22, min_bounds=0)  # sucks the ball in
+            other.bounce(self, bounciness=-0.04, bounds=15, min_bounds=0)  # sucks the ball in
         if ball_to_hole_dist < self.w/4 and self.s_color != [0,255,0]:
             self.in_the_hole_countdown +=1
             #print(self.in_the_hole_countdown)
@@ -486,7 +487,7 @@ while running:
     Ball_Chunk_X, Ball_Chunk_Y = BALL.chunk()
                                                     # BOUNCING
     HOLE.ball_hole_interaction(BALL)
-    if(BALL.bounce(CAR,bounciness=0.01)) == 1:
+    if(BALL.bounce(CAR,bounciness=0.08)) == 1:
         BOUCNE_COUNTER += 1
         #print("BOUCNE COUNTER:",BOUCNE_COUNTER)
 
