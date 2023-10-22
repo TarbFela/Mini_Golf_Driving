@@ -5,14 +5,17 @@ import pygame
 import math
 import random
 import csv
+import sys
 
 pygame.init()
 pi = math.pi
 map_piece_gridding_size = 100
-
 background_colour = (40,40,40)
-screen = pygame.display.set_mode((1200, 1200))
-pygame.display.set_caption('DRIVE AROUND AND HIT THE DAMN BALL (WSAD and SPACE and 1,2,3)')
+window_width = 800
+window_height = 800
+screen = pygame.Surface((3000,3000))
+cam_surface = pygame.display.set_mode((window_width, window_height))
+pygame.display.set_caption('DRIVE AROUND AND HIT THE BALL (WSAD and SPACE and 1,2,3)')
 
 screen.fill(background_colour)
 pygame.display.flip()
@@ -77,21 +80,21 @@ class Inputs:
         #print(self.viable_ins,self.in_switches)
     def input_actions(self,target,can_accelerate=True):
         if self.in_switches[5]:
-            self.fwd_force = 1
+            self.fwd_force = 1.2
         elif self.in_switches[6]:
-            self.fwd_force = 3
+            self.fwd_force = 1.7
         elif self.in_switches[7]:
-            self.fwd_force = 5
+            self.fwd_force = 2
 
 
         if self.in_switches[0] == 1: #forward thrust
             target.accelerate(force=self.fwd_force*can_accelerate)
         elif self.in_switches[1] == 1: #backward thrust
-            target.accelerate(force= -2*can_accelerate)
+            target.accelerate(force= -0.7*can_accelerate)
+        self.spacebar = self.in_switches[4]
+        target.accelerate(force=0,drag=0.001-self.spacebar*0.0006,sideways_drag=0.01-self.spacebar*0.008)
 
-        target.accelerate(force=0,drag=0.001,sideways_drag=0.01-self.in_switches[4]*0.002)
-
-        target.steering(steering_resistance=100, steering_target=2*(self.in_switches[4]*0.5+1)*(self.in_switches[3] - self.in_switches[2]))
+        target.steering(steering_resistance=100, steering_target=(self.in_switches[4]*0.5+1)*(self.in_switches[3] - self.in_switches[2]))
 
 def draw_rect_angle(surface, color, rect, angle, width=0):
     target_rect = pygame.Rect(rect)
@@ -148,8 +151,8 @@ class Sprite:
         #now we figure out which way we are moving (backward or forward)
         heading_radians = self.s_angle * pi / 180
         dot_product = self.vx * math.cos(heading_radians) + self.vy * math.sin(heading_radians)
-        if dot_product < 0:
-            speed*=-1
+        #if dot_product < 0:
+        #    speed*=-1
         self.wheel_angle += (steering_target - self.wheel_angle) / steering_resistance
         self.s_angle += self.wheel_angle * speed #in essense, "TURN X DEGREES FOR EVERY METERE TRAVELLED"
     def move(self,max=0.7):
@@ -197,15 +200,16 @@ class Sprite:
     def bounce(self,other,bounciness,bounds = 10,min_bounds=0):
         dist = math.sqrt( pow((self.posx - other.posx),2) + pow((self.posy - other.posy),2) )
         if min_bounds< dist < bounds:
-            self.vx += bounciness * (self.posx - other.posx) / dist
-            self.vy += bounciness * (self.posy - other.posy) / dist
+            self.vx += bounciness * (self.posx - other.posx) / pow((dist+1),2)
+            self.vy += bounciness * (self.posy - other.posy) / pow((dist+1),2)
             #self.s_color[0] +=1
             if self.ball_is_bounce == 0:
-                self.ball_is_bounce = 1
+                self.ball_is_bounce = 50
+                #print("bonce")
                 return 1
             else:
                 return 0
-        self.ball_is_bounce = 0
+        if self.ball_is_bounce > 0: self.ball_is_bounce += -1
         return 0
 
     in_the_hole_countdown = 0
@@ -213,15 +217,16 @@ class Sprite:
         next_dist = dist((self.posx, self.posy), (other.posx + other.vx, other.posy + other.vy))
         ball_to_hole_dist = dist((self.posx, self.posy),(other.posx, other.posy))
 
-        if ball_to_hole_dist<next_dist:
-            other.bounce(self, bounciness=-0.0002, bounds=15, min_bounds=3)  # sucks the ball in
-        if ball_to_hole_dist < self.w and self.s_color != [0,255,0]:
+        if ball_to_hole_dist<=next_dist:
+            other.bounce(self, bounciness=-0.01, bounds=22, min_bounds=0)  # sucks the ball in
+        if ball_to_hole_dist < self.w/4 and self.s_color != [0,255,0]:
             self.in_the_hole_countdown +=1
             #print(self.in_the_hole_countdown)
-            if self.in_the_hole_countdown > 5000:
-                print("in!")
-                self.s_color = [0,255,0]
-            return 1
+            if self.in_the_hole_countdown > 500:
+                print("\n\n\t\tLevel 1 in par "+str(BOUCNE_COUNTER)+"!")
+                self.s_color = [255,255,255]
+                pygame.quit()
+                sys.exit()
         else:
             self.in_the_hole_countdown = 0
             return 0
@@ -255,7 +260,7 @@ class MapPiece:
         self.relx = rx
         self.rely = ry
         self.drag_scale = 1
-        if isinstance(WallPieceLib[index][-1], str):
+        if isinstance(WallPieceLib[index][-1], str): #WallPiece Library: if last desc is string
             if WallPieceLib[index][-1] == "whole":
                 self.fill_mode = "whole"
                 self.fill_color = [54,129,10]
@@ -267,40 +272,34 @@ class MapPiece:
                 self.drag_scale = 3
                 self.fill_mode = "whole"
                 self.fill_color = [64,139,20]
-        elif index == 1 or index == 2: #NOT SQUARES
-            self.fill_mode = "shape"
+        elif index == 1 or index == 2: #if the color depends on a neighbor
+            self.fill_mode = "shape" #not a full square
             self.fill_color = [54, 129, 10]
             if map_matrix[grid_index_pair[0]+1][grid_index_pair[1]] in [9,10,11]: #if the square below me is filled in
-                copy_color = map_matrix[grid_index_pair[0] + 1][grid_index_pair[1]]
-                if copy_color == 9:
-                    self.fill_color = [54, 129, 10]
-                elif copy_color == 10:
-                    self.fill_color = [190, 170, 80]
-                elif copy_color == 11:
-                    self.fill_color = [64, 139, 20]
+                copy_color = map_matrix[grid_index_pair[0] + 1][grid_index_pair[1]] #copy the square below
                 self.under_over = 0
             else:
-                copy_color = map_matrix[grid_index_pair[0] - 1][grid_index_pair[1]]
-                if copy_color == 9:
-                    self.fill_color = [54, 129, 10]
-                elif copy_color == 10:
-                    self.fill_color = [190, 170, 80]
-                elif copy_color == 11:
-                    self.fill_color = [64, 139, 20]
+                copy_color = map_matrix[grid_index_pair[0] - 1][grid_index_pair[1]] #copy the square above
                 self.under_over = 1
+            if copy_color == 9:  # grass
+                self.fill_color = [54, 129, 10]
+            elif copy_color == 10:  # sand
+                self.fill_color = [190, 170, 80]
+            elif copy_color == 11:  # putting
+                self.fill_color = [64, 139, 20]
         else:
             self.fill_mode = 0
 
     def draw(self,wall_color=(220,220,220)):
         index = self.lib_index
         b_c = (self.relx*map_piece_gridding_size, self.rely*map_piece_gridding_size) # bottom corner
-
+        self.draw_line(b_c, index, wall_color)
         if self.fill_mode == "whole":
             self.fill_square(b_c,index,fill_color=self.fill_color)
         if self.fill_mode == "shape":
             self.fill_shape(b_c,index,under_over=self.under_over,fill_color=self.fill_color)
 
-        self.draw_line(b_c, index, wall_color)
+
 
     def draw_line(self,b_c,index,color):
         for i in range(0, WallPieceLib[index][1]):
@@ -430,9 +429,6 @@ for j,k in enumerate(map_matrix):
         PIECES_LIST[j].append( MapPiece(index=(map_matrix[j][i]),rx=i,ry=j,grid_index_pair=(j,i)))
         PIECES_LIST[j][i].draw()
 
-
-
-
 car_angle = 0
 
 CAR = Sprite()
@@ -457,10 +453,9 @@ HOLE.posy += hole_starting_y
 HOLE.s_color = [25, 80, 5]
 recent_bump = 0
 
-
-
 Car_Chunk_X, Car_Chunk_Y = CAR.chunk()
 BOUCNE_COUNTER = 0
+
 while running:
     # for loop through the event queue
     for event in pygame.event.get():
@@ -479,10 +474,11 @@ while running:
     CAR.move()
     BALL.move()
 
-                                                    # UPDATE SCREEN
+                                                    # UPDATE CAR AND BALL AND REDRAW HOLE
     HOLE.render(shape="ball")
     CAR.render()
     BALL.render(shape="ball")
+    cam_surface.blit(screen,(-CAR.posx+window_width*0.5,-CAR.posy+window_height*0.5))
     pygame.display.flip()
 
                                                     # FIGURE OUT CHUNKS
@@ -494,7 +490,7 @@ while running:
         BOUCNE_COUNTER += 1
         #print("BOUCNE COUNTER:",BOUCNE_COUNTER)
 
-                                                    # WALL COLLISIONS
+                                                    # WALL COLLISIONS, SQUARE DRAWS
     for i in range(-1,2):
         for j in range(-1,2):
             PIECES_LIST[Car_Chunk_Y+i][Car_Chunk_X+j].wall_collision(CAR,0.5)
@@ -504,7 +500,7 @@ while running:
 
                                                     # APPLY FORCES ACCORDING TO INPUTS, DRAG, ETC
     Inputs.input_actions(Inputs, CAR, not (recent_bump))
-    BALL.accelerate(force=0, drag=0.0008*PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].drag_scale)
+    BALL.accelerate(force=0, drag=0.0004*PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].drag_scale)
 
 
         #CAR.reset_bump_timer()
