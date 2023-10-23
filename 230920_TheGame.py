@@ -18,6 +18,9 @@ screen = pygame.Surface((3000,3000))
 cam_surface = pygame.display.set_mode((window_width, window_height))
 pygame.display.set_caption('DRIVE AROUND AND HIT THE BALL (WSAD and SPACE and 1,2,3)')
 
+font = pygame.font.Font('game_over.ttf', 52)
+
+
 screen.fill(background_colour)
 pygame.display.flip()
 running = True
@@ -473,8 +476,13 @@ HOLE.h = 15
 HOLE.posx += hole_starting_x
 HOLE.posy += hole_starting_y
 HOLE.s_color = [25, 80, 5]
-recent_bump = 0
 
+level_text = font.render('LEVEL 1', True, [255,255,255])
+textRect = level_text.get_rect()
+textRect.center = (car_starting_x,car_starting_y-30)
+
+
+recent_bump = 0
 Car_Chunk_X, Car_Chunk_Y = CAR.chunk()
 BOUCNE_COUNTER = 0
 
@@ -504,6 +512,7 @@ while running:
     #rotate screen?
 
     cam_surface.blit(screen,(-CAR.posx+window_width*0.5,-CAR.posy+window_height*0.5))
+
     pygame.display.flip()
 
                                                     # FIGURE OUT CHUNKS
@@ -528,7 +537,8 @@ while running:
                                                     # APPLY FORCES ACCORDING TO INPUTS, DRAG, ETC
     Inputs.input_actions(Inputs, CAR, not (recent_bump))
     BALL.accelerate(force=0, drag=0.0004*PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].drag_scale)
-
+                                                    #PUT TEXT ON MAP
+    screen.blit(level_text, textRect)
 
         #CAR.reset_bump_timer()
     #if PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].wall_collision(BALL,4)[0] != 0:
