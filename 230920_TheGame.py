@@ -404,7 +404,8 @@ WallPieceLib = [
     ["8RightEdge",1,(1,0), (1,1)],
     ["9Green",0,"whole"],
     ["10Sand",0,"sand_whole"],
-    ["11Putting_Green",0,"putting_whole"]
+    ["11Putting_Green",0,"putting_whole"],
+    ["12EqualSign",2,(0,1),(1,1),(0,0),(1,0),"whole"]
     ]
 
 css_to_nums_dict = {
@@ -417,7 +418,8 @@ css_to_nums_dict = {
     "0":9,
     ".":0,
     "S":10,
-    "P":11
+    "P":11,
+    "=":12
 }
 
 #READ MAP FILE
@@ -478,8 +480,11 @@ HOLE.posy += hole_starting_y
 HOLE.s_color = [25, 80, 5]
 
 level_text = font.render('LEVEL 1', True, [255,255,255])
-textRect = level_text.get_rect()
-textRect.center = (car_starting_x,car_starting_y-30)
+level_textRect = level_text.get_rect()
+level_textRect.center = (car_starting_x,car_starting_y-30)
+par_text = font.render('par 3', True, [255,255,255])
+par_textRect = par_text.get_rect()
+par_textRect.center = (car_starting_x,car_starting_y+30)
 
 
 recent_bump = 0
@@ -531,6 +536,8 @@ while running:
             PIECES_LIST[Ball_Chunk_Y+i][Ball_Chunk_X+j].wall_collision(BALL, 0.2)
             PIECES_LIST[Car_Chunk_Y + i][Car_Chunk_X + j].draw_fill_in()  # redraw car interactions
             PIECES_LIST[Ball_Chunk_Y + i][Ball_Chunk_X + j].draw_fill_in()  # redraw car interactions
+    for i in range(-1, 2):
+        for j in range(-1, 2):
             PIECES_LIST[Ball_Chunk_Y + i][Ball_Chunk_X + j].draw_walls() #redraw ball interactions
             PIECES_LIST[Car_Chunk_Y + i][Car_Chunk_X + j].draw_walls()  # redraw car interactions
 
@@ -538,7 +545,8 @@ while running:
     Inputs.input_actions(Inputs, CAR, not (recent_bump))
     BALL.accelerate(force=0, drag=0.0004*PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].drag_scale)
                                                     #PUT TEXT ON MAP
-    screen.blit(level_text, textRect)
+    screen.blit(level_text, level_textRect)
+    screen.blit(par_text,par_textRect)
 
         #CAR.reset_bump_timer()
     #if PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].wall_collision(BALL,4)[0] != 0:
