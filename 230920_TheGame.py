@@ -6,6 +6,12 @@ import math
 import random
 import csv
 import sys
+#   1: easy     2: med      3: hard
+DIFFICULTY = 3
+turn_radius_factor = 3/DIFFICULTY
+speed_factor = 3/DIFFICULTY
+bounce_force_factor = 3/DIFFICULTY
+hole_sucking_radius_factor = math.floor(10/DIFFICULTY)
 
 pygame.init()
 pi = math.pi
@@ -16,7 +22,7 @@ window_width = 800
 window_height = 800
 screen = pygame.Surface((3000,3000))
 cam_surface = pygame.display.set_mode((window_width, window_height))
-pygame.display.set_caption('DRIVE AROUND AND HIT THE BALL (WSAD and SPACE and 1,2,3)')
+pygame.display.set_caption('Rocket League but so much more frustrating')
 
 font = pygame.font.Font('game_over.ttf', 52)
 
@@ -68,12 +74,14 @@ class Inputs:
     viable_ins = [
         119,115,97,100, # W S A D
         32, #space
-        49,50,51,52,53 # 1 2 3 4 5 keys
+        49,50,51,52,53, # 1 2 3 4 5 keys
+        114 # R
     ]
     in_switches = [
-        0,0,0,0,
-        0,
-        0,0,0,0,0
+        0,0,0,0, # 0 1 2 3
+        0, # 4
+        0,0,0,0,0, # 5 6 7 8 9
+        0 # 10
     ]
     fwd_force = 1
     def key_logger(self,key_number,event_type):
@@ -81,8 +89,14 @@ class Inputs:
         if key_number in self.viable_ins:
             target = self.viable_ins.index(key_number)
             self.in_switches[target] = switch
-        #print(self.viable_ins,self.in_switches)
+        #print(self.viable_ins,self.in_switches,key_number)
     def input_actions(self,target,can_accelerate=True):
+        # let's make a level starter!
+        # print(self.in_switches[9])
+        if self.in_switches[10]:
+            print("reset to level 2")
+            reset_to_level()
+
         if self.in_switches[5]:
             self.fwd_force = 1.2
         elif self.in_switches[6]:
@@ -97,11 +111,15 @@ class Inputs:
             target.accelerate(force= -0.7*can_accelerate)
         self.spacebar = self.in_switches[4]
         target.accelerate(force=0,
-                          drag=0.001*pow(PIECES_LIST[Car_Chunk_Y][Car_Chunk_X].drag_scale,0.8)-self.spacebar*0.0006,
+                          drag=0.001*pow(PIECES_LIST[Car_Chunk_Y][Car_Chunk_X].drag_scale,0.6)-self.spacebar*0.0006,
                           sideways_drag=0.01-self.spacebar*0.008 )
 
-        target.steering(steering_resistance=100,
-                        steering_target=(self.in_switches[4]*0.5+1)*(self.in_switches[3] - self.in_switches[2])*(1-0.3*self.spacebar))
+        target.steering(steering_resistance=160 - turn_radius_factor*20,
+                        steering_target=turn_radius_factor *
+                                        (self.in_switches[4]*0.5+1) *
+                                        (self.in_switches[3] - self.in_switches[2]) *
+                                        (1-0.3*self.spacebar))
+
 
 def draw_rect_angle(surface, color, rect, angle, width=0):
     target_rect = pygame.Rect(rect)
@@ -109,19 +127,95 @@ def draw_rect_angle(surface, color, rect, angle, width=0):
     pygame.draw.rect(shape_surf, color, (0, 0, *target_rect.size), width)
     rotated_surf = pygame.transform.rotate(shape_surf, angle)
     surface.blit(rotated_surf, rotated_surf.get_rect(center = target_rect.center))
+
+def reset_to_level(level_file_name = 'game_map_2.csv'):
+    global map_matrix, first_line_text, \
+        first_line_text_list, level_name, level_par, \
+        other_level_text, other_level_text_positions, \
+        car_starting_x, car_starting_y, ball_starting_x, \
+        ball_starting_y, hole_starting_x, hole_starting_y
+    map_matrix = []
+    with open(level_file_name, newline='') as csvfile:
+        csvreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
+        for i, row in enumerate(csvreader):
+            if i == 0:  # ONLY THE FIRST LINE
+                first_line_text = ""
+                for word in row:
+                    first_line_text += word + " "
+                first_line_text_list = first_line_text.split(",")
+                level_name = first_line_text_list[0]
+                del first_line_text_list[0]
+                level_par = int(first_line_text_list[0]) + (3 - DIFFICULTY)
+                del first_line_text_list[0]
+                other_level_text = []
+                other_level_text.append("Level " + level_name)
+                other_level_text.append("par " + str(level_par))
+                other_level_text_positions = []
+                for n, text in enumerate(first_line_text_list):
+                    other_level_text.append(text)
+
+                continue
+            i += -1
+            map_matrix.append([])
+            j = 0
+            for num in row[0].replace(",", ""):
+                if num == "C":
+                    car_starting_x = (j + 0.5) * map_piece_gridding_size
+                    car_starting_y = (i + 0.5) * map_piece_gridding_size
+                    map_matrix[i].append(css_to_nums_dict['0'])
+                elif num == "B":
+                    ball_starting_x = (j + 0.5) * map_piece_gridding_size
+                    ball_starting_y = (i + 0.5) * map_piece_gridding_size
+                    map_matrix[i].append(css_to_nums_dict['0'])
+                elif num == "o":
+                    hole_starting_x = (j + 0.5) * map_piece_gridding_size
+                    hole_starting_y = (i + 0.5) * map_piece_gridding_size
+                    map_matrix[i].append(css_to_nums_dict['P'])
+                elif num == "t":
+                    other_level_text_positions.append(
+                        ((j + 0.5) * map_piece_gridding_size,
+                         (i + 0.5) * map_piece_gridding_size)
+                    )
+                    map_matrix[i].append(css_to_nums_dict['0'])
+                else:
+                    map_matrix[i].append(css_to_nums_dict[num])
+                j += 1
+    global PIECES_LIST, All_Text, Car_Chunk_X, Car_Chunk_Y
+    del PIECES_LIST
+    PIECES_LIST = []  # rows and columns
+    for j, k in enumerate(map_matrix):
+        PIECES_LIST.append([])
+        for i, l in enumerate(map_matrix[j]):
+            PIECES_LIST[j].append(MapPiece(index=(map_matrix[j][i]), rx=i, ry=j, grid_index_pair=(j, i)))
+            PIECES_LIST[j][i].draw_fill_in()
+            PIECES_LIST[j][i].draw_walls()
+
+    All_Text = []
+    for i, item in enumerate(other_level_text):
+        All_Text.append(Text(item,
+                             other_level_text_positions[i][0],
+                             other_level_text_positions[i][1]))
+
+    recent_bump = 0
+    Car_Chunk_X, Car_Chunk_Y = CAR.chunk()
+    BOUCNE_COUNTER = 0
+    CAR.__init__(w=20, h=12, posx=car_starting_x, posy=car_starting_y)
+    BALL.__init__(w=10, h=10, posx=ball_starting_x, posy=ball_starting_y, shape="circle")
+    HOLE.__init__(w=15, h=15, posx=hole_starting_x, posy=hole_starting_y, shape="circle")
 class Sprite:
-    shape = "square"
-    w = 30
-    h = 30
-    vx = 0
-    vy = 0#velocity vector
-    mass = 10000
-    posx = 0
-    posy = 0
-    wheel_angle = 0 #currently rendered in degrees, so trig functions beware!! times pi/180
-    s_rect = pygame.Rect(posx,posy,w,h) #rectangle with position and size
-    s_color = [230,230,230]
-    s_angle = 0
+    def __init__(self,w,h,posx,posy,shape = "square",color=[255,255,255]):
+        self.shape = shape
+        self.w = w
+        self.h = h
+        self.vx = 0
+        self.vy = 0#velocity vector
+        self.mass = 10000
+        self.posx = posx
+        self.posy = posy
+        self.wheel_angle = 0 #currently rendered in degrees, so trig functions beware!! times pi/180
+        self.s_rect = pygame.Rect(self.posx,self.posy,w,h) #rectangle with position and size
+        self.s_color = color
+        self.s_angle = 0
 
     ball_is_bounce = 0
 
@@ -225,15 +319,18 @@ class Sprite:
         ball_to_hole_dist = dist((self.posx, self.posy),(other.posx, other.posy))
 
         if ball_to_hole_dist<=next_dist:
-            other.bounce(self, bounciness=-0.007, bounds=14, min_bounds=0)  # sucks the ball in
+            other.bounce(self, bounciness= -0.004 - 0.001*hole_sucking_radius_factor,
+                         bounds=10+hole_sucking_radius_factor,
+                         min_bounds=0)  # sucks the ball in
         if ball_to_hole_dist < self.w/4 and self.s_color != [0,255,0]:
             self.in_the_hole_countdown +=1
             #print(self.in_the_hole_countdown)
-            if self.in_the_hole_countdown > 500:
+            if self.in_the_hole_countdown == 500:
                 print("\n\n\t\tLevel 1 in par "+str(BOUCNE_COUNTER)+"!")
-                self.s_color = [255,255,255]
-                pygame.quit()
-                sys.exit()
+                All_Text.append(Text("Hole in "+str(BOUCNE_COUNTER),hole_starting_x,hole_starting_y+30))
+                points_from_par = int(level_par) - BOUCNE_COUNTER
+                if points_from_par < 0: points_from_par = 0
+                All_Text.append(Text(str(points_from_par)+" Points", hole_starting_x, hole_starting_y + 50))
         else:
             self.in_the_hole_countdown = 0
             return 0
@@ -260,6 +357,18 @@ class Sprite:
         self.a = 0'''
 
 
+class Text(Sprite):
+    def __init__(self,string,posx,posy):
+        self.posx = posx
+        self.posy = posy
+        self.string = string
+        self.text = font.render(string, True, [93, 173, 45])
+        self.textRect = self.text.get_rect()
+        self.textRect.center = (posx, posy)
+    def render(self,t_surface):
+        t_surface.blit(self.text, self.textRect)
+
+
 
 class MapPiece:
     def __init__(self,index,rx,ry,grid_index_pair):
@@ -278,7 +387,7 @@ class MapPiece:
             if WallPieceLib[index][-1] == "putting_whole":
                 self.drag_scale = 3
                 self.fill_mode = "whole"
-                self.fill_color = [64,139,20]
+                self.fill_color = [64, 145, 16]
         elif index == 1 or index == 2: #if the color depends on a neighbor
             self.fill_mode = "shape" #not a full square
             self.fill_color = [54, 129, 10]
@@ -291,9 +400,11 @@ class MapPiece:
             if copy_color == 9:  # grass
                 self.fill_color = [54, 129, 10]
             elif copy_color == 10:  # sand
+                self.drag_scale = 8
                 self.fill_color = [190, 170, 80]
             elif copy_color == 11:  # putting
-                self.fill_color = [64, 139, 20]
+                self.drag_scale = 3
+                self.fill_color = [64, 145, 16]
         else:
             self.fill_mode = "whole"
             self.fill_color = background_colour
@@ -425,9 +536,27 @@ css_to_nums_dict = {
 #READ MAP FILE
 map_matrix = []
 #here is where we read the input CSV file for the map
-with open('game_map_2.csv', newline='') as csvfile:
+with open('game_map_3.csv', newline='') as csvfile:
     csvreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
     for i,row in enumerate(csvreader):
+        if i == 0: #ONLY THE FIRST LINE
+            first_line_text = ""
+            for word in row:
+                first_line_text += word + " "
+            first_line_text_list = first_line_text.split(",")
+            level_name = first_line_text_list[0]
+            del first_line_text_list[0]
+            level_par = int(first_line_text_list[0]) + (3-DIFFICULTY)
+            del first_line_text_list[0]
+            other_level_text = []
+            other_level_text.append("Level "+level_name)
+            other_level_text.append("par "+str(level_par))
+            other_level_text_positions = []
+            for n,text in enumerate(first_line_text_list):
+                other_level_text.append(text)
+
+            continue
+        i+= -1
         map_matrix.append([])
         j=0
         for num in row[0].replace(",",""):
@@ -443,6 +572,12 @@ with open('game_map_2.csv', newline='') as csvfile:
                 hole_starting_x = (j+0.5)*map_piece_gridding_size
                 hole_starting_y = (i+0.5)*map_piece_gridding_size
                 map_matrix[i].append(css_to_nums_dict['P'])
+            elif num == "t":
+                other_level_text_positions.append(
+                    ((j + 0.5) * map_piece_gridding_size,
+                    (i + 0.5) * map_piece_gridding_size)
+                )
+                map_matrix[i].append(css_to_nums_dict['0'])
             else: map_matrix[i].append(css_to_nums_dict[num])
             j+=1
 
@@ -455,36 +590,17 @@ for j,k in enumerate(map_matrix):
         PIECES_LIST[j][i].draw_fill_in()
         PIECES_LIST[j][i].draw_walls()
 
+CAR = Sprite(w=20,h=12,posx=car_starting_x,posy=car_starting_y)
 
-#car_angle = 0
+BALL = Sprite(w=10,h=10,posx=ball_starting_x,posy=ball_starting_y,shape="circle")
 
-CAR = Sprite()
-CAR.w = 20
-CAR.h = 12
-CAR.posx += car_starting_x
-CAR.posy += car_starting_y
+HOLE = Sprite(w=15,h=15,posx=hole_starting_x,posy=hole_starting_y,shape="circle")
 
-BALL = Sprite()
-BALL.shape = "circle"
-BALL.w = 10
-BALL.h = 10
-BALL.posx += ball_starting_x
-BALL.posy += ball_starting_y
-
-HOLE = Sprite()
-HOLE.shape = "circle"
-HOLE.w = 15
-HOLE.h = 15
-HOLE.posx += hole_starting_x
-HOLE.posy += hole_starting_y
-HOLE.s_color = [25, 80, 5]
-
-level_text = font.render('LEVEL 1', True, [255,255,255])
-level_textRect = level_text.get_rect()
-level_textRect.center = (car_starting_x,car_starting_y-30)
-par_text = font.render('par 3', True, [255,255,255])
-par_textRect = par_text.get_rect()
-par_textRect.center = (car_starting_x,car_starting_y+30)
+All_Text = []
+for i, item in enumerate(other_level_text):
+    All_Text.append(Text(item,
+                         other_level_text_positions[i][0],
+                         other_level_text_positions[i][1]))
 
 
 recent_bump = 0
@@ -494,7 +610,7 @@ BOUCNE_COUNTER = 0
 while running:
     # for loop through the event queue
     for event in pygame.event.get():
-        # Check for QUIT event      
+        # Check for QUIT event
         if event.type == pygame.QUIT:
             running = False
 
@@ -502,24 +618,16 @@ while running:
             # print(event.type,event.key) #turn this on to learn what key number in being pressed down!
             Inputs.key_logger(Inputs,event.key,event.type)
 
-
-
                                                     # UPDATE LOCATION
-    BALL.render(shape="ball",mode="erase")
     CAR.move()
     BALL.move()
-
                                                     # UPDATE CAR AND BALL AND REDRAW HOLE
     HOLE.render(shape="ball")
     CAR.render()
     BALL.render(shape="ball")
-
-    #rotate screen?
-
+                                                    # UPDATE DISPLAY
     cam_surface.blit(screen,(-CAR.posx+window_width*0.5,-CAR.posy+window_height*0.5))
-
     pygame.display.flip()
-
                                                     # FIGURE OUT CHUNKS
     Car_Chunk_X, Car_Chunk_Y = CAR.chunk()
     Ball_Chunk_X, Ball_Chunk_Y = BALL.chunk()
@@ -527,8 +635,6 @@ while running:
     HOLE.ball_hole_interaction(BALL)
     if(BALL.bounce(CAR,bounciness=0.08)) == 1:
         BOUCNE_COUNTER += 1
-        #print("BOUCNE COUNTER:",BOUCNE_COUNTER)
-
                                                     # WALL COLLISIONS, SQUARE DRAWS
     for i in range(-1,2):
         for j in range(-1,2):
@@ -540,16 +646,9 @@ while running:
         for j in range(-1, 2):
             PIECES_LIST[Ball_Chunk_Y + i][Ball_Chunk_X + j].draw_walls() #redraw ball interactions
             PIECES_LIST[Car_Chunk_Y + i][Car_Chunk_X + j].draw_walls()  # redraw car interactions
-
                                                     # APPLY FORCES ACCORDING TO INPUTS, DRAG, ETC
     Inputs.input_actions(Inputs, CAR, not (recent_bump))
     BALL.accelerate(force=0, drag=0.0004*PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].drag_scale)
                                                     #PUT TEXT ON MAP
-    screen.blit(level_text, level_textRect)
-    screen.blit(par_text,par_textRect)
-
-        #CAR.reset_bump_timer()
-    #if PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].wall_collision(BALL,4)[0] != 0:
-        # print("hit")
-        # BALL.accelerate(force=0,drag=0,sideways_drag=1,desired_heading_deg= (PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].wall_collision(CAR,10)[1])*180/pi)
-        # BALL.flip_vel( PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].wall_collision(BALL,4)[1] * 180 / pi + pi)
+    for item in All_Text:
+        item.render(screen)
