@@ -6,12 +6,21 @@ import math
 import random
 import csv
 import sys
+import time
 #   1: easy     2: med      3: hard
 DIFFICULTY = 3
 turn_radius_factor = 3/DIFFICULTY
 speed_factor = 3/DIFFICULTY
 bounce_force_factor = 3/DIFFICULTY
 hole_sucking_radius_factor = math.floor(10/DIFFICULTY)
+
+Level_Library = {
+    0:"game_map_1.csv",
+    1:"game_map_2.csv",
+    2:"game_map_3.csv"
+}
+current_level = 0
+
 
 pygame.init()
 pi = math.pi
@@ -95,7 +104,7 @@ class Inputs:
         # print(self.in_switches[9])
         if self.in_switches[10]:
             print("reset to level 2")
-            reset_to_level()
+            reset_to_level(current_level)
 
         if self.in_switches[5]:
             self.fwd_force = 1.2
@@ -128,7 +137,8 @@ def draw_rect_angle(surface, color, rect, angle, width=0):
     rotated_surf = pygame.transform.rotate(shape_surf, angle)
     surface.blit(rotated_surf, rotated_surf.get_rect(center = target_rect.center))
 
-def reset_to_level(level_file_name = 'game_map_2.csv'):
+def reset_to_level(level = 'game_map_2.csv'):
+    level_file_name = Level_Library[level]
     global map_matrix, first_line_text, \
         first_line_text_list, level_name, level_par, \
         other_level_text, other_level_text_positions, \
@@ -331,6 +341,10 @@ class Sprite:
                 points_from_par = int(level_par) - BOUCNE_COUNTER
                 if points_from_par < 0: points_from_par = 0
                 All_Text.append(Text(str(points_from_par)+" Points", hole_starting_x, hole_starting_y + 50))
+                time.sleep(5)
+                global current_level
+                current_level += 1
+                reset_to_level(current_level)
         else:
             self.in_the_hole_countdown = 0
             return 0
@@ -536,7 +550,7 @@ css_to_nums_dict = {
 #READ MAP FILE
 map_matrix = []
 #here is where we read the input CSV file for the map
-with open('game_map_3.csv', newline='') as csvfile:
+with open(Level_Library[current_level], newline='') as csvfile:
     csvreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
     for i,row in enumerate(csvreader):
         if i == 0: #ONLY THE FIRST LINE
