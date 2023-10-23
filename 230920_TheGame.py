@@ -11,6 +11,7 @@ pygame.init()
 pi = math.pi
 map_piece_gridding_size = 80
 background_colour = (40,40,40)
+screen_angle = 0
 window_width = 800
 window_height = 800
 screen = pygame.Surface((3000,3000))
@@ -92,7 +93,9 @@ class Inputs:
         elif self.in_switches[1] == 1: #backward thrust
             target.accelerate(force= -0.7*can_accelerate)
         self.spacebar = self.in_switches[4]
-        target.accelerate(force=0,drag=0.001-self.spacebar*0.0006,sideways_drag=0.01-self.spacebar*0.008)
+        target.accelerate(force=0,
+                          drag=0.001*pow(PIECES_LIST[Car_Chunk_Y][Car_Chunk_X].drag_scale,0.8)-self.spacebar*0.0006,
+                          sideways_drag=0.01-self.spacebar*0.008 )
 
         target.steering(steering_resistance=100,
                         steering_target=(self.in_switches[4]*0.5+1)*(self.in_switches[3] - self.in_switches[2])*(1-0.3*self.spacebar))
@@ -219,7 +222,7 @@ class Sprite:
         ball_to_hole_dist = dist((self.posx, self.posy),(other.posx, other.posy))
 
         if ball_to_hole_dist<=next_dist:
-            other.bounce(self, bounciness=-0.04, bounds=15, min_bounds=0)  # sucks the ball in
+            other.bounce(self, bounciness=-0.007, bounds=14, min_bounds=0)  # sucks the ball in
         if ball_to_hole_dist < self.w/4 and self.s_color != [0,255,0]:
             self.in_the_hole_countdown +=1
             #print(self.in_the_hole_countdown)
@@ -289,17 +292,21 @@ class MapPiece:
             elif copy_color == 11:  # putting
                 self.fill_color = [64, 139, 20]
         else:
-            self.fill_mode = 0
+            self.fill_mode = "whole"
+            self.fill_color = background_colour
 
-    def draw(self,wall_color=(220,220,220)):
+    def draw_fill_in(self,wall_color=(220,220,220)):
         index = self.lib_index
         b_c = (self.relx*map_piece_gridding_size, self.rely*map_piece_gridding_size) # bottom corner
-        self.draw_line(b_c, index, wall_color)
+
         if self.fill_mode == "whole":
             self.fill_square(b_c,index,fill_color=self.fill_color)
         if self.fill_mode == "shape":
-            self.fill_shape(b_c,index,under_over=self.under_over,fill_color=self.fill_color)
-
+            self.fill_shape(b_c,index,under_over=self.under_over,fill_color=self.fill_color)    
+    def draw_walls(self,wall_color=(220,220,220)):
+        index = self.lib_index
+        b_c = (self.relx*map_piece_gridding_size, self.rely*map_piece_gridding_size) # bottom corner
+        self.draw_line(b_c, index, wall_color)
 
 
     def draw_line(self,b_c,index,color):
@@ -318,18 +325,30 @@ class MapPiece:
             b_c[0],b_c[1],map_piece_gridding_size,map_piece_gridding_size
         ))
     def fill_shape(self,b_c,index,under_over,fill_color=[54,129,10]): #only works for triangles at the moment (that is, ONE line)
-        under_over = 1- under_over
+
         for i in range(0, WallPieceLib[index][1]):
             x1 = float(WallPieceLib[index][2*i+2][0])*map_piece_gridding_size + b_c[0]
             y1 = float(WallPieceLib[index][2*i+2][1])*map_piece_gridding_size + b_c[1]
             x2 = float(WallPieceLib[index][2*i+3][0])*map_piece_gridding_size + b_c[0]
             y2 = float(WallPieceLib[index][2*i+3][1])*map_piece_gridding_size + b_c[1]
+        under_over = 1 - under_over
         pygame.draw.polygon(screen,fill_color,[
             (b_c[0] + map_piece_gridding_size,b_c[1] + map_piece_gridding_size*under_over),
             (x1,y1),
             (x2,y2),
         ])
         pygame.draw.polygon(screen, fill_color, [
+            (b_c[0], b_c[1] + map_piece_gridding_size * under_over),
+            (x1, y1),
+            (x2, y2),
+        ])
+        under_over = 1 - under_over
+        pygame.draw.polygon(screen, background_colour, [
+            (b_c[0] + map_piece_gridding_size, b_c[1] + map_piece_gridding_size * under_over),
+            (x1, y1),
+            (x2, y2),
+        ])
+        pygame.draw.polygon(screen, background_colour, [
             (b_c[0], b_c[1] + map_piece_gridding_size * under_over),
             (x1, y1),
             (x2, y2),
@@ -401,7 +420,7 @@ css_to_nums_dict = {
 #READ MAP FILE
 map_matrix = []
 #here is where we read the input CSV file for the map
-with open('game_map_1.csv', newline='') as csvfile:
+with open('game_map_2.csv', newline='') as csvfile:
     csvreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
     for i,row in enumerate(csvreader):
         map_matrix.append([])
@@ -428,9 +447,11 @@ for j,k in enumerate(map_matrix):
     PIECES_LIST.append([])
     for i,l in enumerate(map_matrix[j]):
         PIECES_LIST[j].append( MapPiece(index=(map_matrix[j][i]),rx=i,ry=j,grid_index_pair=(j,i)))
-        PIECES_LIST[j][i].draw()
+        PIECES_LIST[j][i].draw_fill_in()
+        PIECES_LIST[j][i].draw_walls()
 
-car_angle = 0
+
+#car_angle = 0
 
 CAR = Sprite()
 CAR.w = 20
@@ -479,6 +500,9 @@ while running:
     HOLE.render(shape="ball")
     CAR.render()
     BALL.render(shape="ball")
+
+    #rotate screen?
+
     cam_surface.blit(screen,(-CAR.posx+window_width*0.5,-CAR.posy+window_height*0.5))
     pygame.display.flip()
 
@@ -496,8 +520,10 @@ while running:
         for j in range(-1,2):
             PIECES_LIST[Car_Chunk_Y+i][Car_Chunk_X+j].wall_collision(CAR,0.5)
             PIECES_LIST[Ball_Chunk_Y+i][Ball_Chunk_X+j].wall_collision(BALL, 0.2)
-            PIECES_LIST[Car_Chunk_Y + i][Car_Chunk_X + j].draw() #redraw car interactions
-    PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].draw(wall_color=(100, 255, 100)) #redraw ball interactions
+            PIECES_LIST[Car_Chunk_Y + i][Car_Chunk_X + j].draw_fill_in()  # redraw car interactions
+            PIECES_LIST[Ball_Chunk_Y + i][Ball_Chunk_X + j].draw_fill_in()  # redraw car interactions
+            PIECES_LIST[Ball_Chunk_Y + i][Ball_Chunk_X + j].draw_walls() #redraw ball interactions
+            PIECES_LIST[Car_Chunk_Y + i][Car_Chunk_X + j].draw_walls()  # redraw car interactions
 
                                                     # APPLY FORCES ACCORDING TO INPUTS, DRAG, ETC
     Inputs.input_actions(Inputs, CAR, not (recent_bump))
