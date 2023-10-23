@@ -143,7 +143,8 @@ def reset_to_level(level = 'game_map_2.csv'):
         first_line_text_list, level_name, level_par, \
         other_level_text, other_level_text_positions, \
         car_starting_x, car_starting_y, ball_starting_x, \
-        ball_starting_y, hole_starting_x, hole_starting_y
+        ball_starting_y, hole_starting_x, hole_starting_y, BOUCNE_COUNTER
+
     map_matrix = []
     with open(level_file_name, newline='') as csvfile:
         csvreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
@@ -190,8 +191,9 @@ def reset_to_level(level = 'game_map_2.csv'):
                 else:
                     map_matrix[i].append(css_to_nums_dict[num])
                 j += 1
-    global PIECES_LIST, All_Text, Car_Chunk_X, Car_Chunk_Y
-    del PIECES_LIST
+
+    global PIECES_LIST, All_Text, Car_Chunk_X, Car_Chunk_Y, recent_bump
+
     PIECES_LIST = []  # rows and columns
     for j, k in enumerate(map_matrix):
         PIECES_LIST.append([])
@@ -209,6 +211,7 @@ def reset_to_level(level = 'game_map_2.csv'):
     recent_bump = 0
     Car_Chunk_X, Car_Chunk_Y = CAR.chunk()
     BOUCNE_COUNTER = 0
+    recent_bump = 0
     CAR.__init__(w=20, h=12, posx=car_starting_x, posy=car_starting_y)
     BALL.__init__(w=10, h=10, posx=ball_starting_x, posy=ball_starting_y, shape="circle")
     HOLE.__init__(w=15, h=15, posx=hole_starting_x, posy=hole_starting_y, shape="circle")
@@ -341,7 +344,8 @@ class Sprite:
                 points_from_par = int(level_par) - BOUCNE_COUNTER
                 if points_from_par < 0: points_from_par = 0
                 All_Text.append(Text(str(points_from_par)+" Points", hole_starting_x, hole_starting_y + 50))
-                time.sleep(5)
+
+            if self.in_the_hole_countdown == 5000:
                 global current_level
                 current_level += 1
                 reset_to_level(current_level)
@@ -548,78 +552,17 @@ css_to_nums_dict = {
 }
 
 #READ MAP FILE
+
+CAR = Sprite(w=5,h=5,posx=0,posy=0)
+
+BALL = Sprite(w=5,h=5,posx=0,posy=0,shape="circle")
+
+HOLE = Sprite(w=5,h=5,posx=0,posy=0,shape="circle")
+
 map_matrix = []
 #here is where we read the input CSV file for the map
-with open(Level_Library[current_level], newline='') as csvfile:
-    csvreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
-    for i,row in enumerate(csvreader):
-        if i == 0: #ONLY THE FIRST LINE
-            first_line_text = ""
-            for word in row:
-                first_line_text += word + " "
-            first_line_text_list = first_line_text.split(",")
-            level_name = first_line_text_list[0]
-            del first_line_text_list[0]
-            level_par = int(first_line_text_list[0]) + (3-DIFFICULTY)
-            del first_line_text_list[0]
-            other_level_text = []
-            other_level_text.append("Level "+level_name)
-            other_level_text.append("par "+str(level_par))
-            other_level_text_positions = []
-            for n,text in enumerate(first_line_text_list):
-                other_level_text.append(text)
+reset_to_level(current_level)
 
-            continue
-        i+= -1
-        map_matrix.append([])
-        j=0
-        for num in row[0].replace(",",""):
-            if num == "C":
-                car_starting_x = (j+0.5)*map_piece_gridding_size
-                car_starting_y = (i+0.5)*map_piece_gridding_size
-                map_matrix[i].append(css_to_nums_dict['0'])
-            elif num == "B":
-                ball_starting_x = (j+0.5)*map_piece_gridding_size
-                ball_starting_y = (i+0.5)*map_piece_gridding_size
-                map_matrix[i].append(css_to_nums_dict['0'])
-            elif num == "o":
-                hole_starting_x = (j+0.5)*map_piece_gridding_size
-                hole_starting_y = (i+0.5)*map_piece_gridding_size
-                map_matrix[i].append(css_to_nums_dict['P'])
-            elif num == "t":
-                other_level_text_positions.append(
-                    ((j + 0.5) * map_piece_gridding_size,
-                    (i + 0.5) * map_piece_gridding_size)
-                )
-                map_matrix[i].append(css_to_nums_dict['0'])
-            else: map_matrix[i].append(css_to_nums_dict[num])
-            j+=1
-
-# THIS STUFF PUTS SOME SHAPES ON THE GRID. THE SIZE OF EACH SHAPE IS DETERMINED AT THE TOP IN MAP GRIDDING SHAPE,
-PIECES_LIST = [] #rows and columns
-for j,k in enumerate(map_matrix):
-    PIECES_LIST.append([])
-    for i,l in enumerate(map_matrix[j]):
-        PIECES_LIST[j].append( MapPiece(index=(map_matrix[j][i]),rx=i,ry=j,grid_index_pair=(j,i)))
-        PIECES_LIST[j][i].draw_fill_in()
-        PIECES_LIST[j][i].draw_walls()
-
-CAR = Sprite(w=20,h=12,posx=car_starting_x,posy=car_starting_y)
-
-BALL = Sprite(w=10,h=10,posx=ball_starting_x,posy=ball_starting_y,shape="circle")
-
-HOLE = Sprite(w=15,h=15,posx=hole_starting_x,posy=hole_starting_y,shape="circle")
-
-All_Text = []
-for i, item in enumerate(other_level_text):
-    All_Text.append(Text(item,
-                         other_level_text_positions[i][0],
-                         other_level_text_positions[i][1]))
-
-
-recent_bump = 0
-Car_Chunk_X, Car_Chunk_Y = CAR.chunk()
-BOUCNE_COUNTER = 0
 
 while running:
     # for loop through the event queue
