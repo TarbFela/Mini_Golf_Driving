@@ -32,20 +32,17 @@ window_height = 800
 screen = pygame.Surface((3000,3000))
 cam_surface = pygame.display.set_mode((window_width, window_height))
 pygame.display.set_caption('Rocket League but so much more frustrating')
-
 font = pygame.font.Font('game_over.ttf', 52)
-
 
 screen.fill(background_colour)
 pygame.display.flip()
 running = True
-
 # some snippets so that you can do sin(2) and it'll do sin(2pi)
 def sinpi(x):
     return math.sin(math.pi*x)
 def cospi(x):
     return math.cos(math.pi*x)
-
+#snippet to do vector projections
 def v_proj(vect,vectoronto):
     scale = vect[0] * vectoronto[0] + vect[1] * vectoronto[1]
     scale *= 1 / ( pow(vectoronto[0],2) + pow(vectoronto[1],2))
@@ -129,7 +126,6 @@ class Inputs:
                                         (self.in_switches[3] - self.in_switches[2]) *
                                         (1-0.3*self.spacebar))
 
-
 def draw_rect_angle(surface, color, rect, angle, width=0):
     target_rect = pygame.Rect(rect)
     shape_surf = pygame.Surface(target_rect.size, pygame.SRCALPHA)
@@ -139,6 +135,7 @@ def draw_rect_angle(surface, color, rect, angle, width=0):
 
 def reset_to_level(level = 'game_map_2.csv'):
     level_file_name = Level_Library[level]
+    pygame.display.set_caption('Golf Driver: Level '+ str(current_level+1))
     global map_matrix, first_line_text, \
         first_line_text_list, level_name, level_par, \
         other_level_text, other_level_text_positions, \
@@ -374,7 +371,6 @@ class Sprite:
         self.m = 0
         self.a = 0'''
 
-
 class Text(Sprite):
     def __init__(self,string,posx,posy):
         self.posx = posx
@@ -385,8 +381,6 @@ class Text(Sprite):
         self.textRect.center = (posx, posy)
     def render(self,t_surface):
         t_surface.blit(self.text, self.textRect)
-
-
 
 class MapPiece:
     def __init__(self,index,rx,ry,grid_index_pair):
@@ -513,7 +507,6 @@ class MapPiece:
 
         return 0,0
 
-
 WallPieceLib = [
     #piece type name, #number of walls, #tuples: proportional coords of line points (x0, y0, x1, y1)
     ["0Empty",0],
@@ -551,19 +544,14 @@ css_to_nums_dict = {
     "=":12
 }
 
-#READ MAP FILE
 
 CAR = Sprite(w=5,h=5,posx=0,posy=0)
-
 BALL = Sprite(w=5,h=5,posx=0,posy=0,shape="circle")
-
 HOLE = Sprite(w=5,h=5,posx=0,posy=0,shape="circle")
 
-map_matrix = []
-#here is where we read the input CSV file for the map
 reset_to_level(current_level)
 
-
+#RUN THE GAME
 while running:
     # for loop through the event queue
     for event in pygame.event.get():
