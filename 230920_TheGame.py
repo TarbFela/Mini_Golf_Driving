@@ -23,11 +23,14 @@ turn_radius_factor = 3/DIFFICULTY
 speed_factor = 3/DIFFICULTY
 bounce_force_factor = 3/DIFFICULTY
 hole_sucking_radius_factor = math.floor(10/DIFFICULTY)
+control_to_speed_coeff = 0.5
 
 Level_List = [
     "game_map_0.csv", "game_map_1.csv", "game_map_2.csv", "game_map_3.csv", "game_map_4.csv"
 ]
 current_level = 0
+total_time_score = 0
+total_score =0
 
 
 pygame.init()
@@ -310,13 +313,11 @@ class Sprite:
 
     def steering(self,steering_resistance, steering_target): #steering hardness will represent "how hard the steering wheel is being pulled"
         speed = math.sqrt( pow(self.vx,2) + pow(self.vy,2) ) #speed as a magnitude
+        steer_mult = speed / pow(control_to_speed_coeff * speed + 1, 2)
         #now we figure out which way we are moving (backward or forward)
         heading_radians = self.s_angle * pi / 180
-        dot_product = self.vx * math.cos(heading_radians) + self.vy * math.sin(heading_radians)
-        #if dot_product < 0:
-        #    speed*=-1
         self.wheel_angle += (steering_target - self.wheel_angle) / steering_resistance
-        self.s_angle += self.wheel_angle * speed #in essense, "TURN X DEGREES FOR EVERY METERE TRAVELLED"
+        self.s_angle += self.wheel_angle * steer_mult #in essense, "TURN X DEGREES FOR EVERY METERE TRAVELLED"
     def move(self,max=0.7):
         if self.vx > max:
             self.vx = max* abs(self.vx)/self.vx
@@ -386,7 +387,7 @@ class Sprite:
             self.in_the_hole_countdown +=1
             #print(self.in_the_hole_countdown)
             if self.in_the_hole_countdown == 500:
-                print("\n\n\t\tLevel 1 in par "+str(BOUCNE_COUNTER)+"!")
+                #print("\n\n\t\tLevel 1 in par "+str(BOUCNE_COUNTER)+"!")
                 All_Text.append(Text("Hole in "+str(BOUCNE_COUNTER),hole_starting_x,hole_starting_y+30))
                 points_from_par = int(level_par) - BOUCNE_COUNTER
                 if points_from_par < 0: points_from_par = 0
@@ -395,6 +396,10 @@ class Sprite:
                 t_end = int(time.strftime("%S", t)) + 60 * int(time.strftime("%M", t)) + 3600 * int(
                     time.strftime("%H", t))
                 All_Text.append(Text( str(t_end - t_start) + " seconds", hole_starting_x, hole_starting_y + 80))
+                global total_time_score, total_score
+                total_time_score += t_end - t_start
+                total_score += points_from_par
+                print("\n\n\t\tYou have gotten", total_score,"points in",total_time_score,"seconds")
             if self.in_the_hole_countdown == 5000:
                 global current_level
                 if current_level + 1 < len(Level_List): current_level += 1
@@ -644,3 +649,5 @@ while running:
                                                     #PUT TEXT ON MAP
     for item in All_Text:
         item.render(screen)
+
+    #print( dist( (CAR.vx , CAR.vy), (0,0) ) )
