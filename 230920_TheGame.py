@@ -7,18 +7,26 @@ import random
 import csv
 import sys
 import time
+
+
+t = time.localtime()
+current_sec = int(time.strftime("%S", t)) + 60*int(time.strftime("%M", t)) + 3600*int(time.strftime("%H", t))
+
+t = time.localtime()
+new_sec = int(time.strftime("%S", t)) + 60*int(time.strftime("%M", t)) + 3600*int(time.strftime("%H", t))
+print(new_sec-current_sec)
+
+
 #   1: easy     2: med      3: hard
-DIFFICULTY = 3
+DIFFICULTY = 1
 turn_radius_factor = 3/DIFFICULTY
 speed_factor = 3/DIFFICULTY
 bounce_force_factor = 3/DIFFICULTY
 hole_sucking_radius_factor = math.floor(10/DIFFICULTY)
 
-Level_Library = {
-    0:"game_map_1.csv",
-    1:"game_map_2.csv",
-    2:"game_map_3.csv"
-}
+Level_List = [
+    "game_map_0.csv", "game_map_1.csv", "game_map_2.csv", "game_map_3.csv", "game_map_4.csv"
+]
 current_level = 0
 
 
@@ -29,6 +37,7 @@ background_colour = (40,40,40)
 screen_angle = 0
 window_width = 800
 window_height = 800
+camera_stickiness = 500000
 screen = pygame.Surface((3000,3000))
 cam_surface = pygame.display.set_mode((window_width, window_height))
 pygame.display.set_caption('Rocket League but so much more frustrating')
@@ -81,50 +90,70 @@ class Inputs:
         119,115,97,100, # W S A D
         32, #space
         49,50,51,52,53, # 1 2 3 4 5 keys
-        114 # R
+        114, # R
+        1073741904, 1073741903, 1073741906, 1073741905, #arrows
+        27 #esc
     ]
-    in_switches = [
-        0,0,0,0, # 0 1 2 3
-        0, # 4
-        0,0,0,0,0, # 5 6 7 8 9
-        0 # 10
-    ]
-    fwd_force = 1
+    in_switches = [0 for i in viable_ins]
+    in_switches_dict = {
+        "w" : 0, "s" : 1, "a": 2, "d": 3,
+        "space": 4,
+        "1": 5, "2": 6, "3": 7, "4": 8, "5": 9,
+        "r": 10,
+        "left": 11, "right": 12, "up": 13, "down": 14,
+        "esc": 15
+    }
+    fwd_force = 2
+
+
     def key_logger(self,key_number,event_type):
         switch = 1- (event_type - pygame.KEYDOWN) # 1 if event is keyup, 0 if keydown
         if key_number in self.viable_ins:
             target = self.viable_ins.index(key_number)
             self.in_switches[target] = switch
-        #print(self.viable_ins,self.in_switches,key_number)
-    def input_actions(self,target,can_accelerate=True):
+        #print(key_number) #USE THIS TO FIND THE KEY NUMBER BEING PRESSED
+        #To add a new input, add that key number to the end of viable_ins
+        #then (optional), add a unique name to the dictionary with a value corresponding to the
+        #index of the key number in the viabl_ins list.
+
+    def car_input_actions(self,target,can_accelerate=True):
         # let's make a level starter!
         # print(self.in_switches[9])
-        if self.in_switches[10]:
-            print("reset to level 2")
+        if self.in_switches[self.in_switches_dict["r"]]:
+            print("reset to level",current_level)
             reset_to_level(current_level)
+            time.sleep(0.5)
 
-        if self.in_switches[5]:
+        if self.in_switches[self.in_switches_dict["1"]]:
             self.fwd_force = 1.2
-        elif self.in_switches[6]:
+        elif self.in_switches[self.in_switches_dict["2"]]:
             self.fwd_force = 1.7
-        elif self.in_switches[7]:
+        elif self.in_switches[self.in_switches_dict["3"]]:
             self.fwd_force = 2
 
-
-        if self.in_switches[0] == 1: #forward thrust
-            target.accelerate(force=self.fwd_force*can_accelerate)
-        elif self.in_switches[1] == 1: #backward thrust
-            target.accelerate(force= -0.7*can_accelerate)
-        self.spacebar = self.in_switches[4]
+        target.accelerate(force=
+                    self.fwd_force*can_accelerate * self.in_switches[self.in_switches_dict["w"]] -
+                    0.8*self.fwd_force * self.in_switches[self.in_switches_dict["s"]]
+                          )
+        spacebar = self.in_switches[self.in_switches_dict["space"]]
         target.accelerate(force=0,
-                          drag=0.001*pow(PIECES_LIST[Car_Chunk_Y][Car_Chunk_X].drag_scale,0.6)-self.spacebar*0.0006,
-                          sideways_drag=0.01-self.spacebar*0.008 )
+                          drag=0.001*pow(PIECES_LIST[Car_Chunk_Y][Car_Chunk_X].drag_scale,0.6)-spacebar*0.0006,
+                          sideways_drag=0.01-spacebar*0.008 )
 
         target.steering(steering_resistance=160 - turn_radius_factor*20,
                         steering_target=turn_radius_factor *
                                         (self.in_switches[4]*0.5+1) *
                                         (self.in_switches[3] - self.in_switches[2]) *
-                                        (1-0.3*self.spacebar))
+                                        (1-0.3*spacebar))
+    def ball_input_actions(self,target): #not finished yet
+        is_wsad = (self.in_switches[self.in_switches_dict["w"]] |
+                   self.in_switches[self.in_switches_dict["s"]] |
+                   self.in_switches[self.in_switches_dict["a"]] |
+                   self.in_switches[self.in_switches_dict["d"]])
+        target.accelerate(
+            force = is_wsad, drag=0.01
+        )
+
 
 def draw_rect_angle(surface, color, rect, angle, width=0):
     target_rect = pygame.Rect(rect)
@@ -133,16 +162,18 @@ def draw_rect_angle(surface, color, rect, angle, width=0):
     rotated_surf = pygame.transform.rotate(shape_surf, angle)
     surface.blit(rotated_surf, rotated_surf.get_rect(center = target_rect.center))
 
-def reset_to_level(level = 'game_map_2.csv'):
-    level_file_name = Level_Library[level]
+def reset_to_level(level = 0):
+    level_file_name = Level_List[current_level]
     pygame.display.set_caption('Golf Driver: Level '+ str(current_level+1))
     global map_matrix, first_line_text, \
         first_line_text_list, level_name, level_par, \
         other_level_text, other_level_text_positions, \
         car_starting_x, car_starting_y, ball_starting_x, \
-        ball_starting_y, hole_starting_x, hole_starting_y, BOUCNE_COUNTER
+        ball_starting_y, hole_starting_x, hole_starting_y, BOUCNE_COUNTER, \
+        window_center_x, window_center_y
 
     map_matrix = []
+    #read map file
     with open(level_file_name, newline='') as csvfile:
         csvreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
         for i, row in enumerate(csvreader):
@@ -189,8 +220,8 @@ def reset_to_level(level = 'game_map_2.csv'):
                     map_matrix[i].append(css_to_nums_dict[num])
                 j += 1
 
-    global PIECES_LIST, All_Text, Car_Chunk_X, Car_Chunk_Y, recent_bump
-
+    global PIECES_LIST, All_Text, Car_Chunk_X, Car_Chunk_Y, recent_bump, Ball_Chunk_X, Ball_Chunk_Y
+    #create map piece objects
     PIECES_LIST = []  # rows and columns
     for j, k in enumerate(map_matrix):
         PIECES_LIST.append([])
@@ -198,20 +229,28 @@ def reset_to_level(level = 'game_map_2.csv'):
             PIECES_LIST[j].append(MapPiece(index=(map_matrix[j][i]), rx=i, ry=j, grid_index_pair=(j, i)))
             PIECES_LIST[j][i].draw_fill_in()
             PIECES_LIST[j][i].draw_walls()
-
+    #create text objects
     All_Text = []
     for i, item in enumerate(other_level_text):
         All_Text.append(Text(item,
                              other_level_text_positions[i][0],
                              other_level_text_positions[i][1]))
 
+
     recent_bump = 0
-    Car_Chunk_X, Car_Chunk_Y = CAR.chunk()
+
     BOUCNE_COUNTER = 0
     recent_bump = 0
     CAR.__init__(w=20, h=12, posx=car_starting_x, posy=car_starting_y)
     BALL.__init__(w=10, h=10, posx=ball_starting_x, posy=ball_starting_y, shape="circle")
-    HOLE.__init__(w=15, h=15, posx=hole_starting_x, posy=hole_starting_y, shape="circle")
+    HOLE.__init__(w=15, h=15, posx=hole_starting_x, posy=hole_starting_y, shape="circle",color=[50,50,50])
+    Car_Chunk_X, Car_Chunk_Y = CAR.chunk()
+    Ball_Chunk_X, Ball_Chunk_Y = BALL.chunk()
+    window_center_x = CAR.posx
+    window_center_y = CAR.posy
+    global t_start
+    t = time.localtime()
+    t_start = new_sec = int(time.strftime("%S", t)) + 60*int(time.strftime("%M", t)) + 3600*int(time.strftime("%H", t))
 class Sprite:
     def __init__(self,w,h,posx,posy,shape = "square",color=[255,255,255]):
         self.shape = shape
@@ -332,7 +371,7 @@ class Sprite:
             other.bounce(self, bounciness= -0.004 - 0.001*hole_sucking_radius_factor,
                          bounds=10+hole_sucking_radius_factor,
                          min_bounds=0)  # sucks the ball in
-        if ball_to_hole_dist < self.w/4 and self.s_color != [0,255,0]:
+        if ball_to_hole_dist < self.w/3:
             self.in_the_hole_countdown +=1
             #print(self.in_the_hole_countdown)
             if self.in_the_hole_countdown == 500:
@@ -341,10 +380,14 @@ class Sprite:
                 points_from_par = int(level_par) - BOUCNE_COUNTER
                 if points_from_par < 0: points_from_par = 0
                 All_Text.append(Text(str(points_from_par)+" Points", hole_starting_x, hole_starting_y + 50))
-
+                t = time.localtime()
+                t_end = int(time.strftime("%S", t)) + 60 * int(time.strftime("%M", t)) + 3600 * int(
+                    time.strftime("%H", t))
+                All_Text.append(Text( str(t_end - t_start) + " seconds", hole_starting_x, hole_starting_y + 80))
             if self.in_the_hole_countdown == 5000:
                 global current_level
-                current_level += 1
+                if current_level + 1 < len(Level_List): current_level += 1
+                else: current_level = 0
                 reset_to_level(current_level)
         else:
             self.in_the_hole_countdown = 0
@@ -479,9 +522,9 @@ class MapPiece:
             (x1, y1),
             (x2, y2),
         ])
-    def wall_collision(self,other,coll_thresh):
-        other_x = other.posx
-        other_y = other.posy
+    def wall_collision(self,other,other_x,other_y,coll_thresh):
+        other_x
+        other_y
         other_vx = other.vx
         other_vy = other.vy
         index = self.lib_index
@@ -571,7 +614,9 @@ while running:
     CAR.render()
     BALL.render(shape="ball")
                                                     # UPDATE DISPLAY
-    cam_surface.blit(screen,(-CAR.posx+window_width*0.5,-CAR.posy+window_height*0.5))
+    window_center_x +=  pow((CAR.posx - window_center_x), 3)/camera_stickiness
+    window_center_y += pow((CAR.posy - window_center_y) , 3)/ camera_stickiness
+    cam_surface.blit(screen,(-window_center_x+window_width*0.5,-window_center_y+window_height*0.5))
     pygame.display.flip()
                                                     # FIGURE OUT CHUNKS
     Car_Chunk_X, Car_Chunk_Y = CAR.chunk()
@@ -583,16 +628,16 @@ while running:
                                                     # WALL COLLISIONS, SQUARE DRAWS
     for i in range(-1,2):
         for j in range(-1,2):
-            PIECES_LIST[Car_Chunk_Y+i][Car_Chunk_X+j].wall_collision(CAR,0.5)
-            PIECES_LIST[Ball_Chunk_Y+i][Ball_Chunk_X+j].wall_collision(BALL, 0.2)
+            PIECES_LIST[Car_Chunk_Y+i][Car_Chunk_X+j].wall_collision(CAR,CAR.posx,CAR.posy,0.5)
+            PIECES_LIST[Ball_Chunk_Y+i][Ball_Chunk_X+j].wall_collision(BALL,BALL.posx,BALL.posy, 0.2)
             PIECES_LIST[Car_Chunk_Y + i][Car_Chunk_X + j].draw_fill_in()  # redraw car interactions
             PIECES_LIST[Ball_Chunk_Y + i][Ball_Chunk_X + j].draw_fill_in()  # redraw car interactions
-    for i in range(-1, 2):
-        for j in range(-1, 2):
+    for i in range(-2, 3):
+        for j in range(-2, 3):
             PIECES_LIST[Ball_Chunk_Y + i][Ball_Chunk_X + j].draw_walls() #redraw ball interactions
             PIECES_LIST[Car_Chunk_Y + i][Car_Chunk_X + j].draw_walls()  # redraw car interactions
                                                     # APPLY FORCES ACCORDING TO INPUTS, DRAG, ETC
-    Inputs.input_actions(Inputs, CAR, not (recent_bump))
+    Inputs.car_input_actions(Inputs, CAR, not (recent_bump))
     BALL.accelerate(force=0, drag=0.0004*PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].drag_scale)
                                                     #PUT TEXT ON MAP
     for item in All_Text:
