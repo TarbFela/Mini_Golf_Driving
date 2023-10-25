@@ -18,7 +18,7 @@ print(new_sec-current_sec)
 
 
 #   1: easy     2: med      3: hard
-DIFFICULTY = 1
+DIFFICULTY = 3
 turn_radius_factor = 3/DIFFICULTY
 speed_factor = 3/DIFFICULTY
 bounce_force_factor = 3/DIFFICULTY
@@ -369,9 +369,8 @@ class Sprite:
 
         if ball_to_hole_dist<=next_dist:
             other.bounce(self, bounciness= -0.004 - 0.001*hole_sucking_radius_factor,
-                         bounds=10+hole_sucking_radius_factor,
-                         min_bounds=0)  # sucks the ball in
-        if ball_to_hole_dist < self.w/3:
+                         bounds=10+hole_sucking_radius_factor,)  # sucks the ball in
+        if ball_to_hole_dist < self.w/2.5:
             self.in_the_hole_countdown +=1
             #print(self.in_the_hole_countdown)
             if self.in_the_hole_countdown == 500:
