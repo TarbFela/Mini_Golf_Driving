@@ -38,7 +38,7 @@ screen_angle = 0
 window_width = 800
 window_height = 800
 camera_stickiness = 500000
-screen = pygame.Surface((3000,3000))
+screen = pygame.Surface((5000,5000))
 cam_surface = pygame.display.set_mode((window_width, window_height))
 pygame.display.set_caption('Rocket League but so much more frustrating')
 font = pygame.font.Font('game_over.ttf', 52)
@@ -227,8 +227,10 @@ def reset_to_level(level = 0):
         PIECES_LIST.append([])
         for i, l in enumerate(map_matrix[j]):
             PIECES_LIST[j].append(MapPiece(index=(map_matrix[j][i]), rx=i, ry=j, grid_index_pair=(j, i)))
-            PIECES_LIST[j][i].draw_fill_in()
-            PIECES_LIST[j][i].draw_walls()
+
+
+
+
     #create text objects
     All_Text = []
     for i, item in enumerate(other_level_text):
@@ -248,6 +250,16 @@ def reset_to_level(level = 0):
     Ball_Chunk_X, Ball_Chunk_Y = BALL.chunk()
     window_center_x = CAR.posx
     window_center_y = CAR.posy
+
+
+    for j, k in enumerate(map_matrix):
+        for i, l in enumerate(map_matrix[j]):
+            PIECES_LIST[j][i].draw_fill_in()
+
+    for j, k in enumerate(map_matrix):
+        for i, l in enumerate(map_matrix[j]):
+            PIECES_LIST[j][i].draw_walls()
+
     global t_start
     t = time.localtime()
     t_start = new_sec = int(time.strftime("%S", t)) + 60*int(time.strftime("%M", t)) + 3600*int(time.strftime("%H", t))
@@ -403,15 +415,6 @@ class Sprite:
             math.floor(self.posy / map_piece_gridding_size),
         )
 
-
-
-    '''def __init__(self,x,y,w,h,m,a):
-        self.x = 20
-        self.y = 20
-        self.w = 20
-        self.h = 30
-        self.m = 0
-        self.a = 0'''
 
 class Text(Sprite):
     def __init__(self,string,posx,posy):
