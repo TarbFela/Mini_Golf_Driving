@@ -40,7 +40,7 @@ background_colour = (40,40,40)
 screen_angle = 0
 window_width = 800
 window_height = 800
-camera_stickiness = 500000
+camera_stickiness = 5*pow(10,6)
 screen = pygame.Surface((5000,5000))
 cam_surface = pygame.display.set_mode((window_width, window_height))
 pygame.display.set_caption('Rocket League but so much more frustrating')
@@ -176,6 +176,8 @@ def reset_to_level(level = 0):
         window_center_x, window_center_y
 
     map_matrix = []
+    hole_starting_x = []
+    hole_starting_y = []
     #read map file
     with open(level_file_name, newline='') as csvfile:
         csvreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
@@ -210,8 +212,8 @@ def reset_to_level(level = 0):
                     ball_starting_y = (i + 0.5) * map_piece_gridding_size
                     map_matrix[i].append(css_to_nums_dict['0'])
                 elif num == "o":
-                    hole_starting_x = (j + 0.5) * map_piece_gridding_size
-                    hole_starting_y = (i + 0.5) * map_piece_gridding_size
+                    hole_starting_x.append((j + 0.5) * map_piece_gridding_size)
+                    hole_starting_y.append((i + 0.5) * map_piece_gridding_size)
                     map_matrix[i].append(css_to_nums_dict['P'])
                 elif num == "t":
                     other_level_text_positions.append(
@@ -246,9 +248,16 @@ def reset_to_level(level = 0):
 
     BOUCNE_COUNTER = 0
     recent_bump = 0
+
+    global HOLES
+    HOLES = []
+    for i, x in enumerate(hole_starting_x):
+        y = hole_starting_y[i]
+        HOLES.append( Sprite(w=15,h=15, posx = x, posy = y, shape = "circle", color = [50, 50, 50]) )
+
     CAR.__init__(w=20, h=12, posx=car_starting_x, posy=car_starting_y)
     BALL.__init__(w=10, h=10, posx=ball_starting_x, posy=ball_starting_y, shape="circle")
-    HOLE.__init__(w=15, h=15, posx=hole_starting_x, posy=hole_starting_y, shape="circle",color=[50,50,50])
+    #HOLE.__init__(w=15, h=15, posx=hole_starting_x, posy=hole_starting_y, shape="circle",color=[50,50,50])
     Car_Chunk_X, Car_Chunk_Y = CAR.chunk()
     Ball_Chunk_X, Ball_Chunk_Y = BALL.chunk()
     window_center_x = CAR.posx
@@ -358,6 +367,15 @@ class Sprite:
                 [x + hyp * math.cos(angles[3]), y + hyp * math.sin(angles[3])]
             ]
             pygame.draw.polygon(screen, rend_color, points)
+    def render_path_predictor(self,length = 20):
+        speed = dist( (self.vx, self.vy), (0,0))
+        if speed:
+            x1, y1 = self.posx, self.posy
+            vx, vy = self.vx, self.vy
+            pygame.draw.line(screen, [170,150,180], (x1, y1),
+                             (x1+length* vx / speed, y1+length* vy / speed ),
+                             width= 5
+                         )
     def render_as_ball(self):
         pygame.draw.circle(screen,self.s_color,(self.posx,self.posy),self.w/2,width=2)
     def bounce(self,other,bounciness,bounds = 10,min_bounds=0):
@@ -388,14 +406,14 @@ class Sprite:
             #print(self.in_the_hole_countdown)
             if self.in_the_hole_countdown == 500:
                 #print("\n\n\t\tLevel 1 in par "+str(BOUCNE_COUNTER)+"!")
-                All_Text.append(Text("Hole in "+str(BOUCNE_COUNTER),hole_starting_x,hole_starting_y+30))
+                All_Text.append(Text("Hole in "+str(BOUCNE_COUNTER),self.posx,self.posy+30))
                 points_from_par = int(level_par) - BOUCNE_COUNTER
                 if points_from_par < 0: points_from_par = 0
-                All_Text.append(Text(str(points_from_par)+" Points", hole_starting_x, hole_starting_y + 50))
+                All_Text.append(Text(str(points_from_par)+" Points", self.posx,self.posy + 50))
                 t = time.localtime()
                 t_end = int(time.strftime("%S", t)) + 60 * int(time.strftime("%M", t)) + 3600 * int(
                     time.strftime("%H", t))
-                All_Text.append(Text( str(t_end - t_start) + " seconds", hole_starting_x, hole_starting_y + 80))
+                All_Text.append(Text( str(t_end - t_start) + " seconds", self.posx,self.posy + 80))
                 global total_time_score, total_score
                 total_time_score += t_end - t_start
                 total_score += points_from_par
@@ -597,7 +615,7 @@ css_to_nums_dict = {
 
 CAR = Sprite(w=5,h=5,posx=0,posy=0)
 BALL = Sprite(w=5,h=5,posx=0,posy=0,shape="circle")
-HOLE = Sprite(w=5,h=5,posx=0,posy=0,shape="circle")
+
 
 reset_to_level(current_level)
 
@@ -616,8 +634,9 @@ while running:
                                                     # UPDATE LOCATION
     CAR.move()
     BALL.move()
-                                                    # UPDATE CAR AND BALL AND REDRAW HOLE
-    HOLE.render(shape="ball")
+    for hole in HOLES:                                            # UPDATE CAR AND BALL AND REDRAW HOLE
+        hole.render(shape="ball")
+    #CAR.render_path_predictor(100)
     CAR.render()
     BALL.render(shape="ball")
                                                     # UPDATE DISPLAY
@@ -628,8 +647,10 @@ while running:
                                                     # FIGURE OUT CHUNKS
     Car_Chunk_X, Car_Chunk_Y = CAR.chunk()
     Ball_Chunk_X, Ball_Chunk_Y = BALL.chunk()
-                                                    # BOUNCING
-    HOLE.ball_hole_interaction(BALL)
+
+                                                  # BOUNCING
+    for hole in HOLES:
+        hole.ball_hole_interaction(BALL)
     if(BALL.bounce(CAR,bounciness=0.08)) == 1:
         BOUCNE_COUNTER += 1
                                                     # WALL COLLISIONS, SQUARE DRAWS
