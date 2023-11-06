@@ -14,6 +14,7 @@ new_sec = int(time.strftime("%S", t)) + 60*int(time.strftime("%M", t)) + 3600*in
 print(new_sec-current_sec)
 
 game_clock = pygame.time.Clock()
+phys_clock = pygame.time.Clock()
 
 
 #   1: easy     2: med      3: hard
@@ -652,20 +653,57 @@ while running:
     for event in pygame.event.get():
         # Check for QUIT event
         if event.type == pygame.QUIT:
-            print("game ended with fps =",game_clock.get_fps() )
+            print("game ended with screen fps =",game_clock.get_fps() )
+            print("game ended with phys fps =", phys_clock.get_fps())
             running = False
 
         if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
             # print(event.type,event.key) #turn this on to learn what key number in being pressed down!
             Inputs.key_logger(Inputs,event.key,event.type)
+    for phys_frame in range(0,15):
+        phys_clock.tick()
+                                                        # UPDATE LOCATION
+        CAR.move()
+        BALL.move()
 
-                                                    # UPDATE LOCATION
-    CAR.move()
-    BALL.move()
-                    # UPDATE CAR AND BALL AND REDRAW HOLE
+                                                        # FIGURE OUT CHUNKS
+        Car_Chunk_X, Car_Chunk_Y = CAR.chunk()
+        Ball_Chunk_X, Ball_Chunk_Y = BALL.chunk()
+
+                                                      # BOUNCING
+        for hole in HOLES:
+            hole.ball_hole_interaction(BALL)
+        BOUCNE_COUNTER += BALL.bounce(CAR,bounciness=0.1)
+
+                                                        # WALL COLLISIONS, SQUARE DRAWS
+        for i in range(-1,2):
+            for j in range(-1,2):
+                PIECES_LIST[Car_Chunk_Y+i][Car_Chunk_X+j].wall_collision(CAR,CAR.posx,CAR.posy,0.5)
+                PIECES_LIST[Ball_Chunk_Y+i][Ball_Chunk_X+j].wall_collision(BALL,BALL.posx,BALL.posy, 0.2)
+
+                                                        # APPLY FORCES ACCORDING TO INPUTS, DRAG, ETC
+        Inputs.car_input_actions(Inputs, CAR, not (recent_bump))
+        BALL.accelerate(force=0, drag=0.0004*PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].drag_scale)
+
+
+
+                    #DRAW WALLS AND MAP
+    for i in range(-1,2):
+        for j in range(-1,2):
+            PIECES_LIST[Car_Chunk_Y + i][Car_Chunk_X + j].draw_fill_in()  # redraw car interactions
+            PIECES_LIST[Ball_Chunk_Y + i][Ball_Chunk_X + j].draw_fill_in()  # redraw car interactions
+    for i in range(-2, 3):
+        for j in range(-2, 3):
+            PIECES_LIST[Ball_Chunk_Y + i][Ball_Chunk_X + j].draw_walls() #redraw ball interactions
+            PIECES_LIST[Car_Chunk_Y + i][Car_Chunk_X + j].draw_walls()  # redraw car interactions
+                                                #PUT TEXT ON MAP
+    for item in All_Text:
+        item.render(screen)
+
+    # UPDATE CAR AND BALL AND REDRAW HOLE
     for hole in HOLES:
         hole.render(shape="ball")
-    #CAR.render_path_predictor(100)
+    # CAR.render_path_predictor(100)
     CAR.render()
     BALL.render(shape="ball")
                                                     # UPDATE DISPLAY
@@ -673,34 +711,8 @@ while running:
     window_center_y += pow((CAR.posy - window_center_y) , 3)/ camera_stickiness
     cam_surface.blit(screen,(-window_center_x+window_width*0.5,-window_center_y+window_height*0.5))
     pygame.display.flip()
-                                                    # FIGURE OUT CHUNKS
-    Car_Chunk_X, Car_Chunk_Y = CAR.chunk()
-    Ball_Chunk_X, Ball_Chunk_Y = BALL.chunk()
 
-                                                  # BOUNCING
-    for hole in HOLES:
-        hole.ball_hole_interaction(BALL)
-    BOUCNE_COUNTER += BALL.bounce(CAR,bounciness=0.1)
-
-                                                    # WALL COLLISIONS, SQUARE DRAWS
-    for i in range(-1,2):
-        for j in range(-1,2):
-            PIECES_LIST[Car_Chunk_Y+i][Car_Chunk_X+j].wall_collision(CAR,CAR.posx,CAR.posy,0.5)
-            PIECES_LIST[Ball_Chunk_Y+i][Ball_Chunk_X+j].wall_collision(BALL,BALL.posx,BALL.posy, 0.2)
-            PIECES_LIST[Car_Chunk_Y + i][Car_Chunk_X + j].draw_fill_in()  # redraw car interactions
-            PIECES_LIST[Ball_Chunk_Y + i][Ball_Chunk_X + j].draw_fill_in()  # redraw car interactions
-    for i in range(-2, 3):
-        for j in range(-2, 3):
-            PIECES_LIST[Ball_Chunk_Y + i][Ball_Chunk_X + j].draw_walls() #redraw ball interactions
-            PIECES_LIST[Car_Chunk_Y + i][Car_Chunk_X + j].draw_walls()  # redraw car interactions
-                                                    # APPLY FORCES ACCORDING TO INPUTS, DRAG, ETC
-    Inputs.car_input_actions(Inputs, CAR, not (recent_bump))
-    BALL.accelerate(force=0, drag=0.0004*PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].drag_scale)
-                                                    #PUT TEXT ON MAP
-    for item in All_Text:
-        item.render(screen)
-
-    #game_clock.tick_busy_loop(100)
+    game_clock.tick_busy_loop(80)
     game_clock.tick()
 
     #print( dist( (CAR.vx , CAR.vy), (0,0) ) )
