@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# Define the background colour
-# using RGB color coding.
 import pygame
 import math
 import random
@@ -8,13 +5,15 @@ import csv
 import sys
 import time
 
-
+LEVEL_SELECTOR_MAP = 0
 t = time.localtime()
 current_sec = int(time.strftime("%S", t)) + 60*int(time.strftime("%M", t)) + 3600*int(time.strftime("%H", t))
 
 t = time.localtime()
 new_sec = int(time.strftime("%S", t)) + 60*int(time.strftime("%M", t)) + 3600*int(time.strftime("%H", t))
 print(new_sec-current_sec)
+
+game_clock = pygame.time.Clock()
 
 
 #   1: easy     2: med      3: hard
@@ -24,6 +23,19 @@ speed_factor = 3/DIFFICULTY
 bounce_force_factor = 3/DIFFICULTY
 hole_sucking_radius_factor = math.floor(10/DIFFICULTY)
 control_to_speed_coeff = 0.5
+
+white_color = [255,255,255]
+
+putting_green_color = [64, 145, 16]
+grass_color = [54,129,10]
+sand_color = [190,170,80]
+wall_color = [220,220,220]
+text_color = [93, 173, 45]
+background_colour = [40,40,40]
+ball_color = []
+hole_color = []
+car_color = white_color
+
 
 Level_List = [
     "game_map_0.csv", "game_map_1.csv", "game_map_2.csv", "game_map_3.csv", "game_map_4.csv"
@@ -36,7 +48,6 @@ total_score =0
 pygame.init()
 pi = math.pi
 map_piece_gridding_size = 80
-background_colour = (40,40,40)
 screen_angle = 0
 window_width = 800
 window_height = 800
@@ -250,10 +261,23 @@ def reset_to_level(level = 0):
     recent_bump = 0
 
     global HOLES
+
+
     HOLES = []
     for i, x in enumerate(hole_starting_x):
         y = hole_starting_y[i]
-        HOLES.append( Sprite(w=15,h=15, posx = x, posy = y, shape = "circle", color = [50, 50, 50]) )
+        if current_level == LEVEL_SELECTOR_MAP:
+            HOLES.append( Sprite(
+                w=15,h=15, posx = x, posy = y,
+                shape = "circle", color = [50, 50, 50] ,
+                destination_level = (i+1))
+            )
+        else:
+            HOLES.append(Sprite(
+                w=15, h=15, posx=x, posy=y,
+                shape="circle", color=[50, 50, 50],
+                destination_level=False)
+            )
 
     CAR.__init__(w=20, h=12, posx=car_starting_x, posy=car_starting_y)
     BALL.__init__(w=10, h=10, posx=ball_starting_x, posy=ball_starting_y, shape="circle")
@@ -276,23 +300,26 @@ def reset_to_level(level = 0):
     t = time.localtime()
     t_start = new_sec = int(time.strftime("%S", t)) + 60*int(time.strftime("%M", t)) + 3600*int(time.strftime("%H", t))
 class Sprite:
-    def __init__(self,w,h,posx,posy,shape = "square",color=[255,255,255]):
+    def __init__(self,w,h,posx,posy,shape = "square",color=white_color, destination_level = False,mass=10000):
         self.shape = shape
         self.w = w
         self.h = h
         self.vx = 0
         self.vy = 0#velocity vector
-        self.mass = 10000
+        self.mass = mass
+        self.steering_balancing_parameter = 1
         self.posx = posx
         self.posy = posy
         self.wheel_angle = 0 #currently rendered in degrees, so trig functions beware!! times pi/180
         self.s_rect = pygame.Rect(self.posx,self.posy,w,h) #rectangle with position and size
         self.s_color = color
         self.s_angle = 0
+        if destination_level != False: self.destination_level = destination_level
+        else: self.destination_level = current_level + 1
+        self.ball_is_bounce = 0
+        self.bump_timer = 0
 
-    ball_is_bounce = 0
 
-    bump_timer = 0
     def reset_bump_timer(self):
         self.bump_timer = 55
     def accelerate(self, force = 1, drag = 0, sideways_drag = 0,desired_heading_deg="default"):
@@ -322,7 +349,7 @@ class Sprite:
 
     def steering(self,steering_resistance, steering_target): #steering hardness will represent "how hard the steering wheel is being pulled"
         speed = math.sqrt( pow(self.vx,2) + pow(self.vy,2) ) #speed as a magnitude
-        steer_mult = speed / pow(control_to_speed_coeff * speed + 1, 2)
+        steer_mult = self.steering_balancing_parameter * speed / pow(control_to_speed_coeff * speed + 1, 2)
         #now we figure out which way we are moving (backward or forward)
         heading_radians = self.s_angle * pi / 180
         self.wheel_angle += (steering_target - self.wheel_angle) / steering_resistance
@@ -422,7 +449,7 @@ class Sprite:
                 global current_level
                 if current_level + 1 < len(Level_List): current_level += 1
                 else: current_level = 0
-                reset_to_level(current_level)
+                reset_to_level(self.destination_level)
         else:
             self.in_the_hole_countdown = 0
             return 0
@@ -444,7 +471,7 @@ class Text(Sprite):
         self.posx = posx
         self.posy = posy
         self.string = string
-        self.text = font.render(string, True, [93, 173, 45])
+        self.text = font.render(string, True, text_color)
         self.textRect = self.text.get_rect()
         self.textRect.center = (posx, posy)
     def render(self,t_surface):
@@ -459,15 +486,15 @@ class MapPiece:
         if isinstance(WallPieceLib[index][-1], str): #WallPiece Library: if last desc is string
             if WallPieceLib[index][-1] == "whole":
                 self.fill_mode = "whole"
-                self.fill_color = [54,129,10]
+                self.fill_color = grass_color
             if WallPieceLib[index][-1] == "sand_whole":
                 self.drag_scale = 8
                 self.fill_mode = "whole"
-                self.fill_color = [190,170,80]
+                self.fill_color = sand_color
             if WallPieceLib[index][-1] == "putting_whole":
                 self.drag_scale = 3
                 self.fill_mode = "whole"
-                self.fill_color = [64, 145, 16]
+                self.fill_color = putting_green_color
         elif index == 1 or index == 2: #if the color depends on a neighbor
             self.fill_mode = "shape" #not a full square
             self.fill_color = [54, 129, 10]
@@ -478,13 +505,13 @@ class MapPiece:
                 copy_color = map_matrix[grid_index_pair[0] - 1][grid_index_pair[1]] #copy the square above
                 self.under_over = 1
             if copy_color == 9:  # grass
-                self.fill_color = [54, 129, 10]
+                self.fill_color = grass_color
             elif copy_color == 10:  # sand
                 self.drag_scale = 8
-                self.fill_color = [190, 170, 80]
+                self.fill_color = sand_color
             elif copy_color == 11:  # putting
                 self.drag_scale = 3
-                self.fill_color = [64, 145, 16]
+                self.fill_color = putting_green_color
         else:
             self.fill_mode = "whole"
             self.fill_color = background_colour
@@ -497,7 +524,7 @@ class MapPiece:
             self.fill_square(b_c,index,fill_color=self.fill_color)
         if self.fill_mode == "shape":
             self.fill_shape(b_c,index,under_over=self.under_over,fill_color=self.fill_color)    
-    def draw_walls(self,wall_color=(220,220,220)):
+    def draw_walls(self):
         index = self.lib_index
         b_c = (self.relx*map_piece_gridding_size, self.rely*map_piece_gridding_size) # bottom corner
         self.draw_line(b_c, index, wall_color)
@@ -617,7 +644,7 @@ CAR = Sprite(w=5,h=5,posx=0,posy=0)
 BALL = Sprite(w=5,h=5,posx=0,posy=0,shape="circle")
 
 
-reset_to_level(current_level)
+reset_to_level(0)
 
 #RUN THE GAME
 while running:
@@ -625,6 +652,7 @@ while running:
     for event in pygame.event.get():
         # Check for QUIT event
         if event.type == pygame.QUIT:
+            print("game ended with fps =",game_clock.get_fps() )
             running = False
 
         if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
@@ -634,7 +662,8 @@ while running:
                                                     # UPDATE LOCATION
     CAR.move()
     BALL.move()
-    for hole in HOLES:                                            # UPDATE CAR AND BALL AND REDRAW HOLE
+                    # UPDATE CAR AND BALL AND REDRAW HOLE
+    for hole in HOLES:
         hole.render(shape="ball")
     #CAR.render_path_predictor(100)
     CAR.render()
@@ -651,8 +680,8 @@ while running:
                                                   # BOUNCING
     for hole in HOLES:
         hole.ball_hole_interaction(BALL)
-    if(BALL.bounce(CAR,bounciness=0.08)) == 1:
-        BOUCNE_COUNTER += 1
+    BOUCNE_COUNTER += BALL.bounce(CAR,bounciness=0.1)
+
                                                     # WALL COLLISIONS, SQUARE DRAWS
     for i in range(-1,2):
         for j in range(-1,2):
@@ -670,5 +699,8 @@ while running:
                                                     #PUT TEXT ON MAP
     for item in All_Text:
         item.render(screen)
+
+    #game_clock.tick_busy_loop(100)
+    game_clock.tick()
 
     #print( dist( (CAR.vx , CAR.vy), (0,0) ) )
