@@ -33,7 +33,7 @@ wall_color = [220,220,220]
 text_color = [93, 173, 45]
 background_colour = [40,40,40]
 ball_color = []
-hole_color = []
+hole_color = [50, 50, 50]
 car_color = white_color
 
 
@@ -269,7 +269,7 @@ def reset_to_level(level = 0):
         if current_level == LEVEL_SELECTOR_MAP:
             HOLES.append( Sprite(
                 w=15,h=15, posx = x, posy = y,
-                shape = "circle", color = [50, 50, 50] ,
+                shape = "circle", color = hole_color ,
                 destination_level = (i+1))
             )
         else:
