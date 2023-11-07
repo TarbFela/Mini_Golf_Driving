@@ -479,8 +479,8 @@ class Sprite:
     def flip_vel(self, wx, wy, elasticity_co = 1):
         vel = (self.vx,self.vy)
         proj_onto_wall = v_proj(vel, (wx,wy))
-        self.vx = -1 * vel[0] + 2 * (proj_onto_wall[0])
-        self.vy = -1 * vel[1] + 2 * (proj_onto_wall[1])
+        self.vx = elasticity_co*( -1 * vel[0] + 2 * (proj_onto_wall[0]))
+        self.vy = elasticity_co*( -1 * vel[1] + 2 * (proj_onto_wall[1]))
     def chunk(self):
         return (
             math.floor(self.posx / map_piece_gridding_size),
@@ -596,7 +596,7 @@ class MapPiece:
             (x1, y1),
             (x2, y2),
         ])
-    def wall_collision(self,other,other_x,other_y,coll_thresh):
+    def wall_collision(self,other,other_x,other_y,coll_thresh,elasticity=1):
         other_x
         other_y
         other_vx = other.vx
@@ -620,7 +620,7 @@ class MapPiece:
             if sum_next_dist < sum_dist < dist((x1, y1), (x2, y2)) +coll_thresh:
                 wx = x2 - x1
                 wy = y2 - y1
-                other.flip_vel(wx=wx, wy=wy)
+                other.flip_vel(wx=wx, wy=wy,elasticity_co=elasticity)
                 pygame.mixer.Sound.play(wall_hit_sounds[random.randint(0, 1)])
 
         return 0,0
@@ -705,7 +705,7 @@ while running:
             for j in range(-1,2):
                 for corner_point in CAR.vertices:
                     PIECES_LIST[Car_Chunk_Y+i][Car_Chunk_X+j].wall_collision(CAR,corner_point[0],corner_point[1],0.1)
-                PIECES_LIST[Ball_Chunk_Y+i][Ball_Chunk_X+j].wall_collision(BALL,BALL.posx,BALL.posy, 0.2)
+                PIECES_LIST[Ball_Chunk_Y+i][Ball_Chunk_X+j].wall_collision(BALL,BALL.posx,BALL.posy, 0.2,elasticity=1.2)
 
                                                         # APPLY FORCES ACCORDING TO INPUTS, DRAG, ETC
         Inputs.car_input_actions(Inputs, CAR, not (recent_bump))
