@@ -5,6 +5,15 @@ import csv
 import sys
 import time
 
+from sys import argv
+print(argv[0])
+folder_file_path_as_list = argv[0].split("/")
+print(folder_file_path_as_list)
+folder_file_path = ""
+for word in folder_file_path_as_list[:-1]:
+    folder_file_path += word + "/"
+print(folder_file_path)
+
 LEVEL_SELECTOR_MAP = 0
 t = time.localtime()
 current_sec = int(time.strftime("%S", t)) + 60*int(time.strftime("%M", t)) + 3600*int(time.strftime("%H", t))
@@ -27,17 +36,18 @@ bounce_force_factor = 3/DIFFICULTY
 hole_sucking_radius_factor = math.floor(10/DIFFICULTY)
 control_to_speed_coeff = 0.5
 
-#COLORS
-white_color = [255,255,255]
-putting_green_color = [64, 145, 16]
-grass_color = [54,129,10]
-sand_color = [190,170,80]
-wall_color = [220,220,220]
-text_color = [93, 173, 45]
-background_colour = [40,40,40]
-ball_color = []
-hole_color = [50, 50, 50]
-car_color = white_color
+#COLOR PALLETES
+from Game_Themes import Desert_Colors as Theme
+putting_green_color = Theme["putting"]
+grass_color = Theme["grass"]
+sand_color = Theme["sand"]
+wall_color = Theme["wall"]
+sprite_color = Theme["sprite"]
+text_color = Theme["text"]
+background_color = Theme["background"]
+hole_color = [255,255,0]
+
+
 
 #LEVELS INFO
 Level_List = [
@@ -60,12 +70,12 @@ cam_surface = pygame.display.set_mode((window_width, window_height))
 pygame.display.set_caption('Rocket League but so much more frustrating')
 font = pygame.font.Font('game_over.ttf', 52)
 
-screen.fill(background_colour)
+screen.fill(background_color)
 pygame.display.flip()
 running = True
 
-pygame.mixer.music.load('kathys-waltz.wav')
-pygame.mixer.music.set_volume(0.05)
+pygame.mixer.music.load(Theme["song"])
+pygame.mixer.music.set_volume(Theme["volume"])
 pygame.mixer.music.play(-1)
 
 
@@ -321,7 +331,7 @@ def reset_to_level(level = 0):
     t = time.localtime()
     t_start = new_sec = int(time.strftime("%S", t)) + 60*int(time.strftime("%M", t)) + 3600*int(time.strftime("%H", t))
 class Sprite:
-    def __init__(self,w,h,posx,posy,shape = "square",color=white_color, destination_level = False,mass=10000):
+    def __init__(self,w,h,posx,posy,shape = "square",color=sprite_color, destination_level = False,mass=10000):
         self.shape = shape
         self.w = w
         self.h = h
@@ -391,7 +401,7 @@ class Sprite:
         height = self.h
         width = self.w
         if mode =="erase":
-            rend_color = background_colour
+            rend_color = background_color
             height += 5
             width += 5
         else:
@@ -454,19 +464,39 @@ class Sprite:
             self.in_the_hole_countdown +=1
             #print(self.in_the_hole_countdown)
             if self.in_the_hole_countdown == 500:
-                #print("\n\n\t\tLevel 1 in par "+str(BOUCNE_COUNTER)+"!")
+                if BOUCNE_COUNTER > 30:
+                    All_Text.append(Text("You're Bad at This", self.posx, self.posy - 10))
+                    time.sleep(2)
+                    All_Text.append(Text("There's no hope", self.posx, self.posy + 10))
+                    time.sleep(2)
+                    All_Text.append(Text("As a professional courtesy", self.posx, self.posy + 30))
+                    time.sleep(2)
+                    All_Text.append(Text("Game will self-delete", self.posx, self.posy + 50))
+                    time.sleep(0.5)
+                    All_Text.append(Text("In 10 Seconds", self.posx, self.posy + 70))
+                    time.sleep(3)
+                    All_Text.append(Text("Thanks for trying our game", self.posx, self.posy + 70))
+                    time.sleep(7)
+                    print("\n\nThanks for playing Gold Driver (2023).\n\n\t\tYou're Very Bad at it.\n\n\t\t\t\tFolder has succesfully been deleted.")
+                    #shutil.rmtree(folder_file_path,ignore_errors=True)
+                    sys.exit()
                 All_Text.append(Text("Hole in "+str(BOUCNE_COUNTER),self.posx,self.posy+30))
+
                 points_from_par = int(level_par) - BOUCNE_COUNTER
                 if points_from_par < 0: points_from_par = 0
                 All_Text.append(Text(str(points_from_par)+" Points", self.posx,self.posy + 50))
+
                 t = time.localtime()
                 t_end = int(time.strftime("%S", t)) + 60 * int(time.strftime("%M", t)) + 3600 * int(
                     time.strftime("%H", t))
                 All_Text.append(Text( str(t_end - t_start) + " seconds", self.posx,self.posy + 80))
+
                 global total_time_score, total_score
                 total_time_score += t_end - t_start
                 total_score += points_from_par
+
                 print("\n\n\t\tYou have gotten", total_score,"points in",total_time_score,"seconds")
+
             if self.in_the_hole_countdown == 5000:
                 global current_level
                 if current_level + 1 < len(Level_List): current_level += 1
@@ -536,7 +566,7 @@ class MapPiece:
                 self.fill_color = putting_green_color
         else:
             self.fill_mode = "whole"
-            self.fill_color = background_colour
+            self.fill_color = background_color
 
     def draw_fill_in(self,wall_color=(220,220,220)):
         index = self.lib_index
@@ -586,12 +616,12 @@ class MapPiece:
             (x2, y2),
         ])
         under_over = 1 - under_over
-        pygame.draw.polygon(screen, background_colour, [
+        pygame.draw.polygon(screen, background_color, [
             (b_c[0] + map_piece_gridding_size, b_c[1] + map_piece_gridding_size * under_over),
             (x1, y1),
             (x2, y2),
         ])
-        pygame.draw.polygon(screen, background_colour, [
+        pygame.draw.polygon(screen, background_color, [
             (b_c[0], b_c[1] + map_piece_gridding_size * under_over),
             (x1, y1),
             (x2, y2),
