@@ -15,18 +15,20 @@ print(new_sec-current_sec)
 
 game_clock = pygame.time.Clock()
 phys_clock = pygame.time.Clock()
+perf_const = 4 # too low: choppy   lower: sluggish      just right: Butter      too high: slower movement
+#basically you change the number of physics frames per screen frame
 
 
-#   1: easy     2: med      3: hard
-DIFFICULTY = 3
+#PHYS PARAMS
+DIFFICULTY = 3 #   1: easy     2: med      3: hard
 turn_radius_factor = 3/DIFFICULTY
 speed_factor = 3/DIFFICULTY
 bounce_force_factor = 3/DIFFICULTY
 hole_sucking_radius_factor = math.floor(10/DIFFICULTY)
 control_to_speed_coeff = 0.5
 
+#COLORS
 white_color = [255,255,255]
-
 putting_green_color = [64, 145, 16]
 grass_color = [54,129,10]
 sand_color = [190,170,80]
@@ -37,15 +39,15 @@ ball_color = []
 hole_color = [50, 50, 50]
 car_color = white_color
 
-
+#LEVELS INFO
 Level_List = [
     "game_map_0.csv", "game_map_1.csv", "game_map_2.csv", "game_map_3.csv", "game_map_4.csv"
 ]
-current_level = 0
+current_level = 3
 total_time_score = 0
 total_score =0
 
-
+#PYGAME INIT, FONT, MUSIC, SOUNDS, CAMERA MOVEMENT PARAMS
 pygame.init()
 pi = math.pi
 map_piece_gridding_size = 80
@@ -61,6 +63,20 @@ font = pygame.font.Font('game_over.ttf', 52)
 screen.fill(background_colour)
 pygame.display.flip()
 running = True
+
+pygame.mixer.music.load('kathys-waltz.wav')
+pygame.mixer.music.set_volume(0.05)
+pygame.mixer.music.play(-1)
+
+
+hit_sounds = [
+    pygame.mixer.Sound("Game_Pop1.wav"), pygame.mixer.Sound("Game_Pop2.wav"), pygame.mixer.Sound("Game_Pop3.wav")
+    ]
+
+wall_hit_sounds = [
+    pygame.mixer.Sound("Game_Bump_1.wav"), pygame.mixer.Sound("Game_Bump_2.wav")
+]
+
 # some snippets so that you can do sin(2) and it'll do sin(2pi)
 def sinpi(x):
     return math.sin(math.pi*x)
@@ -107,7 +123,8 @@ class Inputs:
         49,50,51,52,53, # 1 2 3 4 5 keys
         114, # R
         1073741904, 1073741903, 1073741906, 1073741905, #arrows
-        27 #esc
+        27, #esc
+        109
     ]
     in_switches = [0 for i in viable_ins]
     in_switches_dict = {
@@ -116,7 +133,8 @@ class Inputs:
         "1": 5, "2": 6, "3": 7, "4": 8, "5": 9,
         "r": 10,
         "left": 11, "right": 12, "up": 13, "down": 14,
-        "esc": 15
+        "esc": 15,
+        "m": 16
     }
     fwd_force = 2
 
@@ -168,7 +186,9 @@ class Inputs:
         target.accelerate(
             force = is_wsad, drag=0.01
         )
-
+    def music_input_actions(self):
+        if self.in_switches[self.in_switches_dict["m"]]:
+            print("you haven't coded the music toggle yet")
 
 def draw_rect_angle(surface, color, rect, angle, width=0):
     target_rect = pygame.Rect(rect)
@@ -319,6 +339,7 @@ class Sprite:
         else: self.destination_level = current_level + 1
         self.ball_is_bounce = 0
         self.bump_timer = 0
+        self.render(mode="erase")
 
 
     def reset_bump_timer(self):
@@ -388,13 +409,13 @@ class Sprite:
                 a_rad - nat_angle_rad + math.pi,
                 a_rad + nat_angle_rad + math.pi
             ]
-            points = [
+            self.vertices = [
                 [x + hyp * math.cos(angles[0]), y + hyp * math.sin(angles[0])],
                 [x + hyp * math.cos(angles[1]), y + hyp * math.sin(angles[1])],
                 [x + hyp * math.cos(angles[2]), y + hyp * math.sin(angles[2])],
                 [x + hyp * math.cos(angles[3]), y + hyp * math.sin(angles[3])]
             ]
-            pygame.draw.polygon(screen, rend_color, points)
+            pygame.draw.polygon(screen, rend_color, self.vertices)
     def render_path_predictor(self,length = 20):
         speed = dist( (self.vx, self.vy), (0,0))
         if speed:
@@ -600,6 +621,7 @@ class MapPiece:
                 wx = x2 - x1
                 wy = y2 - y1
                 other.flip_vel(wx=wx, wy=wy)
+                pygame.mixer.Sound.play(wall_hit_sounds[random.randint(0, 1)])
 
         return 0,0
 
@@ -645,7 +667,7 @@ CAR = Sprite(w=5,h=5,posx=0,posy=0)
 BALL = Sprite(w=5,h=5,posx=0,posy=0,shape="circle")
 
 
-reset_to_level(0)
+reset_to_level(1)
 
 #RUN THE GAME
 while running:
@@ -655,12 +677,13 @@ while running:
         if event.type == pygame.QUIT:
             print("game ended with screen fps =",game_clock.get_fps() )
             print("game ended with phys fps =", phys_clock.get_fps())
+            pygame.mixer.music.stop()
             running = False
 
         if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
             # print(event.type,event.key) #turn this on to learn what key number in being pressed down!
             Inputs.key_logger(Inputs,event.key,event.type)
-    for phys_frame in range(0,15):
+    for phys_frame in range(0,int(15/perf_const)):
         phys_clock.tick()
                                                         # UPDATE LOCATION
         CAR.move()
@@ -673,12 +696,15 @@ while running:
                                                       # BOUNCING
         for hole in HOLES:
             hole.ball_hole_interaction(BALL)
-        BOUCNE_COUNTER += BALL.bounce(CAR,bounciness=0.1)
+        if BALL.bounce(CAR,bounciness=0.1):
+            BOUCNE_COUNTER += 1
+            pygame.mixer.Sound.play(hit_sounds[random.randint(0,2)])
 
                                                         # WALL COLLISIONS, SQUARE DRAWS
         for i in range(-1,2):
             for j in range(-1,2):
-                PIECES_LIST[Car_Chunk_Y+i][Car_Chunk_X+j].wall_collision(CAR,CAR.posx,CAR.posy,0.5)
+                for corner_point in CAR.vertices:
+                    PIECES_LIST[Car_Chunk_Y+i][Car_Chunk_X+j].wall_collision(CAR,corner_point[0],corner_point[1],0.1)
                 PIECES_LIST[Ball_Chunk_Y+i][Ball_Chunk_X+j].wall_collision(BALL,BALL.posx,BALL.posy, 0.2)
 
                                                         # APPLY FORCES ACCORDING TO INPUTS, DRAG, ETC
@@ -712,7 +738,7 @@ while running:
     cam_surface.blit(screen,(-window_center_x+window_width*0.5,-window_center_y+window_height*0.5))
     pygame.display.flip()
 
-    game_clock.tick_busy_loop(80)
+    game_clock.tick_busy_loop(80*perf_const)
     game_clock.tick()
 
     #print( dist( (CAR.vx , CAR.vy), (0,0) ) )
