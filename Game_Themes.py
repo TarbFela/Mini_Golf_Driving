@@ -1,4 +1,4 @@
-Default_Colors = {
+Default_Theme = {
     "song": "kathys-waltz.wav",
     "volume": 0.2,
     "sprite": [255, 255, 255],
@@ -12,7 +12,7 @@ Default_Colors = {
     'hole': [50, 50, 50]
 }
 
-Desert_Colors = { #THESE ARE HORRENDOUS!
+The_Desert = { #THESE ARE HORRENDOUS!
     "song": "Free Parking Game Music.wav",
     "volume": 0.9,
     "background": [5, 16, 10],

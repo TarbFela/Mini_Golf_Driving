@@ -32,11 +32,14 @@ text_color = [255,255,255]
 pygame.init()
 
 window_width = 800
-window_height = 400
-screen = pygame.display.set_mode((window_width, window_height))
-screen.fill(background_color)
+window_height = 800
+menu_screen = pygame.display.set_mode((window_width, window_height))
+menu_screen.fill(background_color)
 
-font = pygame.font.Font('game_over.ttf', 52)
+
+header_font = pygame.font.Font('game_over.ttf', 152)
+tiny_font = pygame.font.Font('game_over.ttf', 55)
+text_font = pygame.font.Font('game_over.ttf', 77)
 
 pygame.display.flip()
 running = True
@@ -47,7 +50,8 @@ selectors = [ 0 for i in range(0,numberOfSelectors)]
 #level, theme, settings
 selector_target = 0
 class Text():
-    def __init__(self,string,posx,posy):
+    def __init__(self,string,posx,posy,font=text_font):
+        self.font = font
         self.posx = posx
         self.posy = posy
         self.string = string
@@ -59,23 +63,31 @@ class Text():
 
 
     def change_text(self,new_string):
-        self.text = font.render(self.string, True, background_color)
-        self.render(screen)
+        self.text = self.font.render(self.string, True, background_color)
+        self.render(menu_screen)
         tR = self.textRect
-        pygame.draw.rect(screen,background_color,[tR.x, tR.y, tR.width + 50,tR.height+5] )
-        self.text = font.render(new_string, True, text_color)
+        pygame.draw.rect(menu_screen,background_color,[tR.x, tR.y, tR.width + 50,tR.height+5] )
+        self.text = self.font.render(new_string, True, text_color)
         self.textRect = self.text.get_rect()
         self.textRect.center = (self.posx, self.posy)
-        self.render(screen)
+        self.render(menu_screen)
+
+Header_Text = Text("Putter's Strokes",window_width/2,window_height-350,font=header_font)
+Header_Text.render(menu_screen)
+Subheader_Text = Text("Rolling with misery",window_width/2,window_height-305,font=tiny_font)
+Subheader_Text.render(menu_screen)
+
+Instructions = Text("Use Arrows To Change Settings. Press 'esc' to begin",window_width/2,window_height-50,font=tiny_font)
+Instructions.render(menu_screen)
 
 Level_Name_Text = Text("Level 0",window_width/2, window_height - 250)
-Level_Name_Text.render(screen)
+Level_Name_Text.render(menu_screen)
 
 Theme_Name_Text = Text("Default Theme",window_width/2, window_height - 200)
-Theme_Name_Text.render(screen)
+Theme_Name_Text.render(menu_screen)
 
 Setting_Name_Text = Text("Settings (not coded)",window_width/2, window_height - 150)
-Setting_Name_Text.render(screen)
+Setting_Name_Text.render(menu_screen)
 
 while running:
     # for loop through the event queue
@@ -119,5 +131,5 @@ while running:
             in_switches[sw_target] = switch
 
 
-    #Level_Name_Text.render(screen)
+    #Level_Name_Text.render(menu_screen)
     pygame.display.flip()

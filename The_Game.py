@@ -5,11 +5,17 @@ import csv
 import sys
 import time
 from sys import argv
+import importlib
 
 
-from Main_Menu_UI import menuOutputInfo
-print(menuOutputInfo)
-current_level = menuOutputInfo["level"]
+import Main_Menu_UI
+print(Main_Menu_UI.menuOutputInfo)
+current_level = Main_Menu_UI.menuOutputInfo["level"]
+time.sleep(1)
+
+
+'''importlib.reload(Main_Menu_UI)
+current_level = Main_Menu_UI.menuOutputInfo["level"]'''
 
 print(argv[0])
 folder_file_path_as_list = argv[0].split("/")
@@ -43,7 +49,7 @@ control_to_speed_coeff = 0.5
 color_disp_const = 40
 
 #COLOR PALLETES
-from Game_Themes import Speedrun_Danger as Theme
+from Game_Themes import Default_Theme as Theme
 putting_green_color = Theme["putting"]
 grass_color = Theme["grass"]
 sand_color = Theme["sand"]
@@ -179,7 +185,14 @@ class Inputs:
             self.fwd_force = 1.7
         elif self.in_switches[self.in_switches_dict["3"]]:
             self.fwd_force = 2
-
+                                            #needs bug squashing
+        if self.in_switches[self.in_switches_dict["esc"]]:
+            import importlib
+            importlib.reload(Main_Menu_UI)
+            global dest_level
+            dest_level = Main_Menu_UI.menuOutputInfo["level"]
+            time.sleep(0.7)
+            reset_to_level(dest_level)
         '''if self.in_switches[self.in_switches_dict["up"]]:
             for row in PIECES_LIST:
                 for entry in row:
@@ -510,10 +523,12 @@ class Sprite:
 
                 print("\n\n\t\tYou have gotten", total_score,"points in",total_time_score,"seconds")
 
+
             if self.in_the_hole_countdown == 5000:
-                global current_level
+                '''global current_level
                 if current_level + 1 < len(Level_List): current_level += 1
-                else: current_level = 0
+                else: current_level = 0'''
+
                 reset_to_level(self.destination_level)
         else:
             self.in_the_hole_countdown = 0
