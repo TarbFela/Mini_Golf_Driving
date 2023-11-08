@@ -49,7 +49,7 @@ print(new_sec-current_sec)
 
 game_clock = pygame.time.Clock()
 phys_clock = pygame.time.Clock()
-perf_const = 4 # too low: choppy   lower: sluggish      just right: Butter      too high: slower movement
+perf_const = 9 # too low: choppy   lower: sluggish      just right: Butter      too high: slower movement
 #basically you change the number of physics frames per screen frame
 
 
@@ -839,9 +839,11 @@ while really_running_i_mean_it:
     if really_running_i_mean_it == False: sys.exit(0)
 
     pygame.display.quit()
+    pygame.mixer.music.stop()
     Inputs.in_switches[ Inputs.in_switches_dict["esc"] ] = 0
     #print("\n\n\t\tit worked")
     importlib.reload(Main_Menu_UI)
+
     current_level = Main_Menu_UI.menuOutputInfo["level"]
     window_width = 800
     window_height = 800
@@ -849,7 +851,28 @@ while really_running_i_mean_it:
     screen = pygame.Surface((5000, 5000))
     cam_surface = pygame.display.set_mode((window_width, window_height))
     pygame.display.set_caption('Rocket League but so much more frustrating')
+
+
+    theme_name = Game_Themes.theme_name_dict[Main_Menu_UI.menuOutputInfo["theme_number"]]
+    print(theme_name)
+    Theme = Game_Themes.Themes[theme_name]
+    putting_green_color = Theme["putting"]
+    grass_color = Theme["grass"]
+    sand_color = Theme["sand"]
+    wall_color = Theme["wall"]
+    sprite_color = Theme["sprite"]
+    text_color = Theme["text"]
+    background_color = Theme["background"]
+    hole_color = [255, 255, 0]
+
+    pygame.mixer.music.load(Theme["song"])
+    pygame.mixer.music.set_volume(Theme["volume"])
+    if Main_Menu_UI.menuOutputInfo["Music"]: pygame.mixer.music.play(-1)
+
     reset_to_level(current_level)
+
     running = True
     print(running)
+
+
 
