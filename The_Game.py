@@ -91,6 +91,7 @@ font = pygame.font.Font('game_over.ttf', 52)
 screen.fill(background_color)
 pygame.display.flip()
 running = True
+really_running_i_mean_it = True
 
 pygame.mixer.music.load(Theme["song"])
 pygame.mixer.music.set_volume(Theme["volume"])
@@ -200,12 +201,9 @@ class Inputs:
             self.fwd_force = 2
                                             #needs bug squashing
         if self.in_switches[self.in_switches_dict["esc"]]:
-            import importlib
-            importlib.reload(Main_Menu_UI)
-            global dest_level
-            dest_level = Main_Menu_UI.menuOutputInfo["level"]
-            time.sleep(0.7)
-            reset_to_level(dest_level)
+            global running
+            running = False
+            #pygame.display.quit()
         '''if self.in_switches[self.in_switches_dict["up"]]:
             for row in PIECES_LIST:
                 for entry in row:
@@ -749,81 +747,109 @@ BALL = Sprite(w=5,h=5,posx=0,posy=0,shape="circle")
 reset_to_level(1)
 frame = 0
 #RUN THE GAME
-while running:
-    frame += 1
-    # for loop through the event queue
+while really_running_i_mean_it:
+                        #GAME LOOP
+    while running == True:
+        frame += 1
+        # for loop through the event queue
+        for event in pygame.event.get():
+            # Check for QUIT event
+            if event.type == pygame.QUIT:
+                print("game ended with screen fps =",game_clock.get_fps() )
+                print("game ended with phys fps =", phys_clock.get_fps())
+                pygame.mixer.music.stop()
+                running = False
+                really_running_i_mean_it = False
+
+            if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
+                # print(event.type,event.key) #turn this on to learn what key number in being pressed down!
+                Inputs.key_logger(Inputs,event.key,event.type)
+        for phys_frame in range(0,int(15/perf_const)):
+            phys_clock.tick()
+                                                            # UPDATE LOCATION
+            CAR.move()
+            BALL.move()
+
+                                                            # FIGURE OUT CHUNKS
+            Car_Chunk_X, Car_Chunk_Y = CAR.chunk()
+            Ball_Chunk_X, Ball_Chunk_Y = BALL.chunk()
+
+                                                          # BOUNCING
+            for hole in HOLES:
+                hole.ball_hole_interaction(BALL)
+            if BALL.bounce(CAR,bounciness=0.1):
+                BOUCNE_COUNTER += 1
+                pygame.mixer.Sound.play(hit_sounds[random.randint(0,2)])
+
+                                                            # WALL COLLISIONS, SQUARE DRAWS
+            for i in range(-1,2):
+                for j in range(-1,2):
+                    for corner_point in CAR.vertices:
+                        PIECES_LIST[Car_Chunk_Y+i][Car_Chunk_X+j].wall_collision(CAR,corner_point[0],corner_point[1],0.3)
+                    PIECES_LIST[Ball_Chunk_Y+i][Ball_Chunk_X+j].wall_collision(BALL,BALL.posx,BALL.posy, 0.4,elasticity=1.2)
+
+
+
+
+
+                        #DRAW WALLS AND MAP
+        for i in range(-1,2):
+            for j in range(-1,2):
+                PIECES_LIST[Car_Chunk_Y + i][Car_Chunk_X + j].draw_fill_in()  # redraw car interactions
+                PIECES_LIST[Ball_Chunk_Y + i][Ball_Chunk_X + j].draw_fill_in()  # redraw car interactions
+        for i in range(-2, 3):
+            for j in range(-2, 3):
+                PIECES_LIST[Ball_Chunk_Y + i][Ball_Chunk_X + j].draw_walls() #redraw ball interactions
+                PIECES_LIST[Car_Chunk_Y + i][Car_Chunk_X + j].draw_walls()  # redraw car interactions
+                                                    #PUT TEXT ON MAP
+        for item in All_Text:
+            item.render(screen)
+
+        # UPDATE CAR AND BALL AND REDRAW HOLE
+        for hole in HOLES:
+            hole.render(shape="ball")
+        # CAR.render_path_predictor(100)
+        CAR.render()
+        BALL.render(shape="ball")
+                                                        # UPDATE DISPLAY
+        window_center_x +=  pow((CAR.posx - window_center_x), 3)/camera_stickiness
+        window_center_y += pow((CAR.posy - window_center_y) , 3)/ camera_stickiness
+        cam_surface.blit(screen,(-window_center_x+window_width*0.5,-window_center_y+window_height*0.5))
+        pygame.display.flip()
+
+        game_clock.tick_busy_loop(80*perf_const)
+        game_clock.tick()
+        '''if not(frame%200):
+            for row in PIECES_LIST:
+                for entry in row:
+                    entry.randomize_color()
+                    entry.draw_fill_in()'''
+
+        # APPLY FORCES ACCORDING TO INPUTS, DRAG, ETC
+        Inputs.car_input_actions(Inputs, CAR, not (recent_bump))
+        BALL.accelerate(force=0, drag=0.0004 * PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].drag_scale)
+
+        #print( dist( (CAR.vx , CAR.vy), (0,0) ) )
+
     for event in pygame.event.get():
         # Check for QUIT event
         if event.type == pygame.QUIT:
-            print("game ended with screen fps =",game_clock.get_fps() )
-            print("game ended with phys fps =", phys_clock.get_fps())
             pygame.mixer.music.stop()
-            running = False
+            really_running_i_mean_it = False
+    if really_running_i_mean_it == False: sys.exit(0)
 
-        if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
-            # print(event.type,event.key) #turn this on to learn what key number in being pressed down!
-            Inputs.key_logger(Inputs,event.key,event.type)
-    for phys_frame in range(0,int(15/perf_const)):
-        phys_clock.tick()
-                                                        # UPDATE LOCATION
-        CAR.move()
-        BALL.move()
+    pygame.display.quit()
+    Inputs.in_switches[ Inputs.in_switches_dict["esc"] ] = 0
+    #print("\n\n\t\tit worked")
+    importlib.reload(Main_Menu_UI)
+    current_level = Main_Menu_UI.menuOutputInfo["level"]
+    window_width = 800
+    window_height = 800
+    camera_stickiness = 5 * pow(10, 6)
+    screen = pygame.Surface((5000, 5000))
+    cam_surface = pygame.display.set_mode((window_width, window_height))
+    pygame.display.set_caption('Rocket League but so much more frustrating')
+    reset_to_level(current_level)
+    running = True
+    print(running)
 
-                                                        # FIGURE OUT CHUNKS
-        Car_Chunk_X, Car_Chunk_Y = CAR.chunk()
-        Ball_Chunk_X, Ball_Chunk_Y = BALL.chunk()
-
-                                                      # BOUNCING
-        for hole in HOLES:
-            hole.ball_hole_interaction(BALL)
-        if BALL.bounce(CAR,bounciness=0.1):
-            BOUCNE_COUNTER += 1
-            pygame.mixer.Sound.play(hit_sounds[random.randint(0,2)])
-
-                                                        # WALL COLLISIONS, SQUARE DRAWS
-        for i in range(-1,2):
-            for j in range(-1,2):
-                for corner_point in CAR.vertices:
-                    PIECES_LIST[Car_Chunk_Y+i][Car_Chunk_X+j].wall_collision(CAR,corner_point[0],corner_point[1],0.3)
-                PIECES_LIST[Ball_Chunk_Y+i][Ball_Chunk_X+j].wall_collision(BALL,BALL.posx,BALL.posy, 0.4,elasticity=1.2)
-
-                                                        # APPLY FORCES ACCORDING TO INPUTS, DRAG, ETC
-        Inputs.car_input_actions(Inputs, CAR, not (recent_bump))
-        BALL.accelerate(force=0, drag=0.0004*PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].drag_scale)
-
-
-
-                    #DRAW WALLS AND MAP
-    for i in range(-1,2):
-        for j in range(-1,2):
-            PIECES_LIST[Car_Chunk_Y + i][Car_Chunk_X + j].draw_fill_in()  # redraw car interactions
-            PIECES_LIST[Ball_Chunk_Y + i][Ball_Chunk_X + j].draw_fill_in()  # redraw car interactions
-    for i in range(-2, 3):
-        for j in range(-2, 3):
-            PIECES_LIST[Ball_Chunk_Y + i][Ball_Chunk_X + j].draw_walls() #redraw ball interactions
-            PIECES_LIST[Car_Chunk_Y + i][Car_Chunk_X + j].draw_walls()  # redraw car interactions
-                                                #PUT TEXT ON MAP
-    for item in All_Text:
-        item.render(screen)
-
-    # UPDATE CAR AND BALL AND REDRAW HOLE
-    for hole in HOLES:
-        hole.render(shape="ball")
-    # CAR.render_path_predictor(100)
-    CAR.render()
-    BALL.render(shape="ball")
-                                                    # UPDATE DISPLAY
-    window_center_x +=  pow((CAR.posx - window_center_x), 3)/camera_stickiness
-    window_center_y += pow((CAR.posy - window_center_y) , 3)/ camera_stickiness
-    cam_surface.blit(screen,(-window_center_x+window_width*0.5,-window_center_y+window_height*0.5))
-    pygame.display.flip()
-
-    game_clock.tick_busy_loop(80*perf_const)
-    game_clock.tick()
-    '''if not(frame%200):
-        for row in PIECES_LIST:
-            for entry in row:
-                entry.randomize_color()
-                entry.draw_fill_in()'''
-
-    #print( dist( (CAR.vx , CAR.vy), (0,0) ) )

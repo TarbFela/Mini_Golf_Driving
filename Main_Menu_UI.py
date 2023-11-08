@@ -151,3 +151,4 @@ while running:
 
     #Level_Name_Text.render(menu_screen)
     pygame.display.flip()
+pygame.display.quit()
