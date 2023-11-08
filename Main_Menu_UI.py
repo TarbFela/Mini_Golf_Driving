@@ -1,4 +1,5 @@
 import pygame
+from Scores_And_Times_Parser import *
 import math
 import random
 import csv
@@ -10,13 +11,13 @@ from sys import argv
 numberOfSelectors = 3
 numberOfLevels = 5
 Theme_Name_List = [
-    "Defualt Theme", "Desert", "Simple Blue", "Royal Red"
+    "Defualt Theme", "Desert", "Simple Blue", "Keanu Movie", "Royal Red"
 ]
 numberOfThemes = len(Theme_Name_List)
 
 viable_ins = [
         1073741904, 1073741903, 1073741906, 1073741905, #arrows
-        27, #esc
+        13, #enter
         109
     ]
 in_switches = [0 for i in viable_ins]
@@ -31,8 +32,8 @@ text_color = [255,255,255]
 
 pygame.init()
 
-window_width = 800
-window_height = 800
+window_width = 900
+window_height = 400
 menu_screen = pygame.display.set_mode((window_width, window_height))
 menu_screen.fill(background_color)
 
@@ -72,12 +73,25 @@ class Text():
         self.textRect.center = (self.posx, self.posy)
         self.render(menu_screen)
 
+def DisplayStats(level,mode,x,y,surface=menu_screen,erase=False):
+
+    stats_list = scores_and_times(level,mode=mode)
+    stats_list.sort()
+    stats_list.reverse()
+    while 1000000 in stats_list:
+        stats_list.remove(1000000)
+    stat_header_text = Text( "Lvl" + str(level) + " " + str(mode), x, y, text_font)
+    stat_header_text.render(surface)
+    for i, stat in enumerate(stats_list):
+        stat = Text( str( stat ) , x, y+17*i + 30, tiny_font)
+        stat.render(surface)
+
 Header_Text = Text("Putter's Strokes",window_width/2,window_height-350,font=header_font)
 Header_Text.render(menu_screen)
 Subheader_Text = Text("Rolling with misery",window_width/2,window_height-305,font=tiny_font)
 Subheader_Text.render(menu_screen)
 
-Instructions = Text("Use Arrows To Change Settings. Press 'esc' to begin",window_width/2,window_height-50,font=tiny_font)
+Instructions = Text("Use Arrows To Change Settings. Press Enter to start",window_width/2,window_height-50,font=tiny_font)
 Instructions.render(menu_screen)
 
 Level_Name_Text = Text("Level 0",window_width/2, window_height - 250)
@@ -109,6 +123,10 @@ while running:
                     selectors[0] += sel_increment
                     selectors[0] = selectors[0]%numberOfLevels
                     Level_Name_Text.change_text("Level "+str(selectors[0]))
+                    pygame.draw.rect(menu_screen, background_color, [ 0, 80, 150,600 ]) #cheap erase
+                    DisplayStats(selectors[0],"scores",window_width/2 - 350, 100)
+                    pygame.draw.rect(menu_screen, background_color, [window_width-180, 80, 250, 600])  # cheap erase
+                    DisplayStats(selectors[0], "times", window_width / 2 + 350, 100)
                 if selector_target == 1:
                     selectors[1] += sel_increment
                     selectors[1] = selectors[1]%numberOfThemes

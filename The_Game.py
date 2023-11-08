@@ -6,12 +6,26 @@ import sys
 import time
 from sys import argv
 import importlib
-
+from Scores_And_Times_Parser import *
 
 import Main_Menu_UI
 print(Main_Menu_UI.menuOutputInfo)
 current_level = Main_Menu_UI.menuOutputInfo["level"]
-time.sleep(1)
+
+
+import Game_Themes
+
+theme_name = Game_Themes.theme_name_dict[Main_Menu_UI.menuOutputInfo["theme_number"]]
+print(theme_name)
+Theme = Game_Themes.Themes[ theme_name ]
+putting_green_color = Theme["putting"]
+grass_color = Theme["grass"]
+sand_color = Theme["sand"]
+wall_color = Theme["wall"]
+sprite_color = Theme["sprite"]
+text_color = Theme["text"]
+background_color = Theme["background"]
+hole_color = [255,255,0]
 
 
 '''importlib.reload(Main_Menu_UI)
@@ -49,15 +63,7 @@ control_to_speed_coeff = 0.5
 color_disp_const = 40
 
 #COLOR PALLETES
-from Game_Themes import Default_Theme as Theme
-putting_green_color = Theme["putting"]
-grass_color = Theme["grass"]
-sand_color = Theme["sand"]
-wall_color = Theme["wall"]
-sprite_color = Theme["sprite"]
-text_color = Theme["text"]
-background_color = Theme["background"]
-hole_color = [255,255,0]
+
 
 
 
@@ -138,6 +144,13 @@ def mirror_vector(velocity_vector, wall_vector, elasticity_co):
 
 
     return new_vector # change the output of the collision detection...
+
+
+
+
+#scores_and_times(1,4,104)
+#print("level 3 scores:",scores_and_times(3,mode="scores"))
+
 class Inputs:
     viable_ins = [
         119,115,97,100, # W S A D
@@ -507,8 +520,8 @@ class Sprite:
                     #shutil.rmtree(folder_file_path,ignore_errors=True)
                     sys.exit()
                 All_Text.append(Text("Hole in "+str(BOUCNE_COUNTER),self.posx,self.posy+30))
-
                 points_from_par = int(level_par) - BOUCNE_COUNTER
+
                 if points_from_par < 0: points_from_par = 0
                 All_Text.append(Text(str(points_from_par)+" Points", self.posx,self.posy + 50))
 
@@ -522,12 +535,17 @@ class Sprite:
                 total_score += points_from_par
 
                 print("\n\n\t\tYou have gotten", total_score,"points in",total_time_score,"seconds")
+                for text in All_Text:
+                    text.render(screen)
+                cam_surface.blit(screen,(-window_center_x + window_width * 0.5, -window_center_y + window_height * 0.5))
+                pygame.display.flip()
 
+                time.sleep(5)
 
-            if self.in_the_hole_countdown == 5000:
-                '''global current_level
+                global current_level
+                scores_and_times(current_level, points_from_par, t_end - t_start)
                 if current_level + 1 < len(Level_List): current_level += 1
-                else: current_level = 0'''
+                else: current_level = 0
 
                 reset_to_level(self.destination_level)
         else:

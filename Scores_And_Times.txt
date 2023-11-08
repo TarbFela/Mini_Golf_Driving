@@ -1,0 +1,24 @@
+level 0 scores: 1000000, 0, 0, 0, 0
+level 0 times: 1000000, 30, 35, 33, 32
+level 1 scores: 1000000, 3, 3
+level 1 times: 1000000, 40, 26
+level 2 scores: 1000000, 5
+level 2 times: 1000000, 61
+level 3 scores: 1000000
+level 3 times: 1000000
+level 4 scores: 1000000
+level 4 times: 1000000
+level 5 scores: 1000000
+level 5 times: 1000000
+level 6 scores: 1000000
+level 6 times: 1000000
+level 7 scores: 1000000
+level 7 times: 1000000
+level 8 scores: 1000000
+level 8 times: 1000000
+level 9 scores: 1000000
+level 9 times: 1000000
+level 10 scores: 1000000
+level 10 times: 1000000
+level 11 scores: 1000000
+level 11 times: 1000000
