@@ -16,7 +16,7 @@ Theme_Name_List = [
 ]
 numberOfThemes = len(Theme_Name_List)
 
-settingsMenuList = ["Music", "SFX (NC)", "Clear Scores", "Difficulty (NC)"]
+settingsMenuList = ["Music", "Clear Scores"]
 settingsMenuStatusList = [1 for i in settingsMenuList]
 numberOfSettings = len(settingsMenuList)
 setting_target = 0

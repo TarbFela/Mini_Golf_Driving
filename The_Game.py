@@ -54,13 +54,13 @@ perf_const = 9 # too low: choppy   lower: sluggish      just right: Butter      
 
 
 #PHYS PARAMS
-DIFFICULTY = 3 #   1: easy     2: med      3: hard
+DIFFICULTY = 3 #should prolly stay btwn 1 and 3
 turn_radius_factor = 3/DIFFICULTY
-speed_factor = 3/DIFFICULTY
+speed_factor = 30/DIFFICULTY
 bounce_force_factor = 3/DIFFICULTY
 hole_sucking_radius_factor = math.floor(10/DIFFICULTY)
 control_to_speed_coeff = 0.5
-color_disp_const = 40
+color_disp_const = 40 #doesn't work lol
 
 #COLOR PALLETES
 
@@ -477,8 +477,8 @@ class Sprite:
     def bounce(self,other,bounciness,bounds = 10,min_bounds=0):
         dist = math.sqrt( pow((self.posx - other.posx),2) + pow((self.posy - other.posy),2) )
         if min_bounds< dist < bounds:
-            self.vx += bounciness * (self.posx - other.posx) / pow((dist+1),2)
-            self.vy += bounciness * (self.posy - other.posy) / pow((dist+1),2)
+            self.vx += bounce_force_factor * bounciness * (self.posx - other.posx) / pow((dist+1),2)
+            self.vy += bounce_force_factor * bounciness * (self.posy - other.posy) / pow((dist+1),2)
             #self.s_color[0] +=1
             if self.ball_is_bounce == 0:
                 self.ball_is_bounce = 50

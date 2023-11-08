@@ -1,13 +1,13 @@
-level 0 scores: 0, 0
-level 0 times: 0, 42
-level 1 scores: 0, 0
-level 1 times: 0, 86
-level 2 scores: 0, 3
-level 2 times: 0, 66
-level 3 scores: 0, 2, 4, 2
-level 3 times: 0, 61, 35, 55
-level 4 scores: 0, 3, 1, 1
-level 4 times: 0, 49, 62, 50
+level 0 scores: 0
+level 0 times: 0
+level 1 scores: 0
+level 1 times: 0
+level 2 scores: 0
+level 2 times: 0
+level 3 scores: 0
+level 3 times: 0
+level 4 scores: 0
+level 4 times: 0
 level 5 scores: 0
 level 5 times: 0
 level 6 scores: 0
