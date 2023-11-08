@@ -99,8 +99,11 @@ Header_Text.render(menu_screen)
 Subheader_Text = Text("Rolling with misery",window_width/2,window_height-305,font=tiny_font)
 Subheader_Text.render(menu_screen)
 
-Instructions = Text("Use Arrows To Choose. Press Enter to change settings or start",window_width/2,window_height-50,font=tiny_font)
-Instructions.render(menu_screen)
+Instructions1 = Text("Use Arrows To Choose",window_width/2,window_height-65,font=tiny_font)
+Instructions2 = Text("Press Enter to change settings or start",window_width/2,window_height-45,font=tiny_font)
+
+Instructions1.render(menu_screen)
+Instructions2.render(menu_screen)
 
 Level_Name_Text = Text("Choose Level",window_width/2, window_height - 250)
 Level_Name_Text.render(menu_screen)

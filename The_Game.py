@@ -538,7 +538,7 @@ class Sprite:
                 cam_surface.blit(screen,(-window_center_x + window_width * 0.5, -window_center_y + window_height * 0.5))
                 pygame.display.flip()
 
-                time.sleep(5)
+                time.sleep(2.5)
 
                 global current_level
                 scores_and_times(current_level, points_from_par, t_end - t_start)
@@ -786,7 +786,7 @@ while really_running_i_mean_it:
                 for j in range(-1,2):
                     for corner_point in CAR.vertices:
                         PIECES_LIST[Car_Chunk_Y+i][Car_Chunk_X+j].wall_collision(CAR,corner_point[0],corner_point[1],0.3)
-                    PIECES_LIST[Ball_Chunk_Y+i][Ball_Chunk_X+j].wall_collision(BALL,BALL.posx,BALL.posy, 0.4,elasticity=1.2)
+                    PIECES_LIST[Ball_Chunk_Y+i][Ball_Chunk_X+j].wall_collision(BALL,BALL.posx,BALL.posy, 0.4,elasticity=1)
 
 
 
