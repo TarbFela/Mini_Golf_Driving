@@ -7,6 +7,8 @@ import time
 from sys import argv
 import importlib
 from Scores_And_Times_Parser import *
+import os, shutil
+
 
 import Main_Menu_UI
 print(Main_Menu_UI.menuOutputInfo)
@@ -85,7 +87,7 @@ window_height = 800
 camera_stickiness = 5*pow(10,6)
 screen = pygame.Surface((5000,5000))
 cam_surface = pygame.display.set_mode((window_width, window_height))
-pygame.display.set_caption('Rocket League but so much more frustrating')
+pygame.display.set_caption('Press "ESC" to access Menu. Press "R" to reset level')
 font = pygame.font.Font('game_over.ttf', 52)
 
 screen.fill(background_color)
@@ -96,6 +98,11 @@ really_running_i_mean_it = True
 pygame.mixer.music.load(Theme["song"])
 pygame.mixer.music.set_volume(Theme["volume"])
 pygame.mixer.music.play(-1)
+
+
+'''img = pygame.image.load("TBS Shirt Print B.png")
+img = pygame.transform.scale(img, (200,200))'''
+
 
 
 hit_sounds = [
@@ -246,7 +253,7 @@ def draw_rect_angle(surface, color, rect, angle, width=0):
 
 def reset_to_level(level = 0):
     level_file_name = Level_List[current_level]
-    pygame.display.set_caption('Golf Driver: Level '+ str(current_level+1))
+    pygame.display.set_caption('Press "ESC" to access Menu. Press "R" to reset level')
     global map_matrix, first_line_text, \
         first_line_text_list, level_name, level_par, \
         other_level_text, other_level_text_positions, \
@@ -285,35 +292,40 @@ def reset_to_level(level = 0):
                 if num == "C":
                     car_starting_x = (j + 0.5) * map_piece_gridding_size
                     car_starting_y = (i + 0.5) * map_piece_gridding_size
-                    map_matrix[i].append(css_to_nums_dict['0'])
+                    map_matrix[i].append(css_to_nums_dict['0']) #create a
+                    #create a CAR
                 elif num == "B":
                     ball_starting_x = (j + 0.5) * map_piece_gridding_size
                     ball_starting_y = (i + 0.5) * map_piece_gridding_size
                     map_matrix[i].append(css_to_nums_dict['0'])
+                    #create a BALL
                 elif num == "o":
                     hole_starting_x.append((j + 0.5) * map_piece_gridding_size)
                     hole_starting_y.append((i + 0.5) * map_piece_gridding_size)
                     map_matrix[i].append(css_to_nums_dict['P'])
+                    #create a HOLE
                 elif num == "t":
                     other_level_text_positions.append(
                         ((j + 0.5) * map_piece_gridding_size,
                          (i + 0.5) * map_piece_gridding_size)
                     )
                     map_matrix[i].append(css_to_nums_dict['0'])
+                    #create a TEXT sprite
                 else:
                     map_matrix[i].append(css_to_nums_dict[num])
+                    #remember which map piece goes where based on the css (or txt) file
+                    #this map_matrix is a grid of characters,
+                    # which can be referenced to a Library (dict object) of information,
+                    # on how to draw certain shapes
                 j += 1
 
     global PIECES_LIST, All_Text, Car_Chunk_X, Car_Chunk_Y, recent_bump, Ball_Chunk_X, Ball_Chunk_Y
-    #create map piece objects
+    #create a LIST of MAPPIECE objects, telling them to __init__ based on Map_Piece_Library info
     PIECES_LIST = []  # rows and columns
     for j, k in enumerate(map_matrix):
         PIECES_LIST.append([])
         for i, l in enumerate(map_matrix[j]):
             PIECES_LIST[j].append(MapPiece(index=(map_matrix[j][i]), rx=i, ry=j, grid_index_pair=(j, i)))
-
-
-
 
     #create text objects
     All_Text = []
@@ -322,14 +334,11 @@ def reset_to_level(level = 0):
                              other_level_text_positions[i][0],
                              other_level_text_positions[i][1]))
 
-
     recent_bump = 0
-
     BOUCNE_COUNTER = 0
     recent_bump = 0
 
     global HOLES
-
 
     HOLES = []
     for i, x in enumerate(hole_starting_x):
@@ -354,7 +363,6 @@ def reset_to_level(level = 0):
     Ball_Chunk_X, Ball_Chunk_Y = BALL.chunk()
     window_center_x = CAR.posx
     window_center_y = CAR.posy
-
 
     for j, k in enumerate(map_matrix):
         for i, l in enumerate(map_matrix[j]):
@@ -387,8 +395,6 @@ class Sprite:
         self.ball_is_bounce = 0
         self.bump_timer = 0
         self.render(mode="erase")
-
-
     def reset_bump_timer(self):
         self.bump_timer = 55
     def accelerate(self, force = 1, drag = 0, sideways_drag = 0,desired_heading_deg="default"):
@@ -415,7 +421,6 @@ class Sprite:
         # self.vx *= (1 + perpendicular_vector_magnitude / 900)
         # self.vy *= (1 + perpendicular_vector_magnitude / 900)
         # CHATGPT CODE: Ends
-
     def steering(self,steering_resistance, steering_target): #steering hardness will represent "how hard the steering wheel is being pulled"
         speed = math.sqrt( pow(self.vx,2) + pow(self.vy,2) ) #speed as a magnitude
         steer_mult = self.steering_balancing_parameter * speed / pow(control_to_speed_coeff * speed + 1, 2)
@@ -488,7 +493,6 @@ class Sprite:
                 return 0
         if self.ball_is_bounce > 0: self.ball_is_bounce += -1
         return 0
-
     in_the_hole_countdown = 0
     def ball_hole_interaction(self,other):
         next_dist = dist((self.posx, self.posy), (other.posx + other.vx, other.posy + other.vy))
@@ -549,7 +553,6 @@ class Sprite:
         else:
             self.in_the_hole_countdown = 0
             return 0
-
     def flip_vel(self, wx, wy, elasticity_co = 1):
         vel = (self.vx,self.vy)
         proj_onto_wall = v_proj(vel, (wx,wy))
@@ -627,8 +630,6 @@ class MapPiece:
         index = self.lib_index
         b_c = (self.relx*map_piece_gridding_size, self.rely*map_piece_gridding_size) # bottom corner
         self.draw_line(b_c, index, wall_color)
-
-
     def draw_line(self,b_c,index,color):
         for i in range(0, WallPieceLib[index][1]):
             x1 = float(WallPieceLib[index][2*i+2][0])*map_piece_gridding_size + b_c[0]
@@ -787,11 +788,6 @@ while really_running_i_mean_it:
                     for corner_point in CAR.vertices:
                         PIECES_LIST[Car_Chunk_Y+i][Car_Chunk_X+j].wall_collision(CAR,corner_point[0],corner_point[1],0.3)
                     PIECES_LIST[Ball_Chunk_Y+i][Ball_Chunk_X+j].wall_collision(BALL,BALL.posx,BALL.posy, 0.4,elasticity=1)
-
-
-
-
-
                         #DRAW WALLS AND MAP
         for i in range(-1,2):
             for j in range(-1,2):
@@ -801,6 +797,7 @@ while really_running_i_mean_it:
             for j in range(-2, 3):
                 PIECES_LIST[Ball_Chunk_Y + i][Ball_Chunk_X + j].draw_walls() #redraw ball interactions
                 PIECES_LIST[Car_Chunk_Y + i][Car_Chunk_X + j].draw_walls()  # redraw car interactions
+
                                                     #PUT TEXT ON MAP
         for item in All_Text:
             item.render(screen)
@@ -815,9 +812,12 @@ while really_running_i_mean_it:
         window_center_x +=  pow((CAR.posx - window_center_x), 3)/camera_stickiness
         window_center_y += pow((CAR.posy - window_center_y) , 3)/ camera_stickiness
         cam_surface.blit(screen,(-window_center_x+window_width*0.5,-window_center_y+window_height*0.5))
+
+        #cam_surface.blit(img,(0,0))
+
         pygame.display.flip()
 
-        game_clock.tick_busy_loop(80*perf_const)
+        game_clock.tick_busy_loop(80*perf_const,)
         game_clock.tick()
         '''if not(frame%200):
             for row in PIECES_LIST:
@@ -850,7 +850,7 @@ while really_running_i_mean_it:
     camera_stickiness = 5 * pow(10, 6)
     screen = pygame.Surface((5000, 5000))
     cam_surface = pygame.display.set_mode((window_width, window_height))
-    pygame.display.set_caption('Rocket League but so much more frustrating')
+    pygame.display.set_caption('Press "ESC" to access Menu. Press "R" to reset level')
 
 
     theme_name = Game_Themes.theme_name_dict[Main_Menu_UI.menuOutputInfo["theme_number"]]

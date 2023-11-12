@@ -50,7 +50,7 @@ tiny_font = pygame.font.Font('game_over.ttf', 55)
 text_font = pygame.font.Font('game_over.ttf', 77)
 
 pygame.display.flip()
-pygame.display.set_caption("Putter's Menu")
+pygame.display.set_caption("Putter's Menu. Press ENTER to play")
 running = True
 
 
