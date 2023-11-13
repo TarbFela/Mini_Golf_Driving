@@ -8,14 +8,14 @@ from sys import argv
 import importlib
 from Scores_And_Times_Parser import *
 import os, shutil
+import Game_Themes
 
-
-import Main_Menu_UI
+'''import Main_Menu_UI
 print(Main_Menu_UI.menuOutputInfo)
 current_level = Main_Menu_UI.menuOutputInfo["level"]
 
 
-import Game_Themes
+
 
 theme_name = Game_Themes.theme_name_dict[Main_Menu_UI.menuOutputInfo["theme_number"]]
 print(theme_name)
@@ -27,11 +27,15 @@ wall_color = Theme["wall"]
 sprite_color = Theme["sprite"]
 text_color = Theme["text"]
 background_color = Theme["background"]
-hole_color = [255,255,0]
+hole_color = [255,255,0]'''
 
 
 '''importlib.reload(Main_Menu_UI)
 current_level = Main_Menu_UI.menuOutputInfo["level"]'''
+
+current_level = 0
+background_color = [0,0,0]
+sprite_color = [255,255,255]
 
 print(argv[0])
 folder_file_path_as_list = argv[0].split("/")
@@ -57,11 +61,11 @@ perf_const = 9 # too low: choppy   lower: sluggish      just right: Butter      
 
 #PHYS PARAMS
 DIFFICULTY = 3 #should prolly stay btwn 1 and 3
-turn_radius_factor = 3/DIFFICULTY
+turn_radius_factor = 5/DIFFICULTY
 speed_factor = 30/DIFFICULTY
 bounce_force_factor = 3/DIFFICULTY
 hole_sucking_radius_factor = math.floor(10/DIFFICULTY)
-control_to_speed_coeff = 0.5
+control_to_speed_coeff = 0.9
 color_disp_const = 40 #doesn't work lol
 
 #COLOR PALLETES
@@ -95,9 +99,9 @@ pygame.display.flip()
 running = True
 really_running_i_mean_it = True
 
-pygame.mixer.music.load(Theme["song"])
+'''pygame.mixer.music.load(Theme["song"])
 pygame.mixer.music.set_volume(Theme["volume"])
-pygame.mixer.music.play(-1)
+pygame.mixer.music.play(-1)'''
 
 
 '''img = pygame.image.load("TBS Shirt Print B.png")
@@ -152,8 +156,6 @@ def mirror_vector(velocity_vector, wall_vector, elasticity_co):
 
 
     return new_vector # change the output of the collision detection...
-
-
 
 
 #scores_and_times(1,4,104)
@@ -227,7 +229,7 @@ class Inputs:
                           drag=0.001*pow(PIECES_LIST[Car_Chunk_Y][Car_Chunk_X].drag_scale,0.6)-spacebar*0.0006,
                           sideways_drag=0.01-spacebar*0.008 )
 
-        target.steering(steering_resistance=160 - turn_radius_factor*20,
+        target.steering(steering_resistance=260 - turn_radius_factor*20,
                         steering_target=turn_radius_factor *
                                         (self.in_switches[4]*0.5+1) *
                                         (self.in_switches[3] - self.in_switches[2]) *
@@ -356,8 +358,8 @@ def reset_to_level(level = 0):
                 destination_level=False)
             )
 
-    CAR.__init__(w=20, h=12, posx=car_starting_x, posy=car_starting_y)
-    BALL.__init__(w=10, h=10, posx=ball_starting_x, posy=ball_starting_y, shape="circle")
+    CAR.__init__(w=20, h=12, posx=car_starting_x, posy=car_starting_y,color=sprite_color)
+    BALL.__init__(w=10, h=10, posx=ball_starting_x, posy=ball_starting_y, shape="circle",color=sprite_color)
     #HOLE.__init__(w=15, h=15, posx=hole_starting_x, posy=hole_starting_y, shape="circle",color=[50,50,50])
     Car_Chunk_X, Car_Chunk_Y = CAR.chunk()
     Ball_Chunk_X, Ball_Chunk_Y = BALL.chunk()
@@ -745,10 +747,48 @@ CAR = Sprite(w=5,h=5,posx=0,posy=0)
 BALL = Sprite(w=5,h=5,posx=0,posy=0,shape="circle")
 
 
-reset_to_level(1)
+'''reset_to_level(1)'''
 frame = 0
+first_loop = True
 #RUN THE GAME
 while really_running_i_mean_it:
+    pygame.display.quit()
+    pygame.mixer.music.stop()
+    Inputs.in_switches[Inputs.in_switches_dict["esc"]] = 0
+    # print("\n\n\t\tit worked")
+    if first_loop:
+        import Main_Menu_UI
+        first_loop = False
+    else: importlib.reload(Main_Menu_UI)
+
+    current_level = Main_Menu_UI.menuOutputInfo["level"]
+    window_width = 800
+    window_height = 800
+    camera_stickiness = 5 * pow(10, 6)
+    screen = pygame.Surface((5000, 5000))
+    cam_surface = pygame.display.set_mode((window_width, window_height))
+    pygame.display.set_caption('Press "ESC" to access Menu. Press "R" to reset level')
+
+    theme_name = Game_Themes.theme_name_dict[Main_Menu_UI.menuOutputInfo["theme_number"]]
+    print(theme_name)
+    Theme = Game_Themes.Themes[theme_name]
+    putting_green_color = Theme["putting"]
+    grass_color = Theme["grass"]
+    sand_color = Theme["sand"]
+    wall_color = Theme["wall"]
+    sprite_color = Theme["sprite"]
+    text_color = Theme["text"]
+    background_color = Theme["background"]
+    hole_color = [255, 255, 0]
+
+    pygame.mixer.music.load(Theme["song"])
+    pygame.mixer.music.set_volume(Theme["volume"])
+    if Main_Menu_UI.menuOutputInfo["Music"]: pygame.mixer.music.play(-1)
+
+    reset_to_level(current_level)
+
+    running = True
+    print(running)
                         #GAME LOOP
     while running == True:
         frame += 1
@@ -787,7 +827,7 @@ while really_running_i_mean_it:
                 for j in range(-1,2):
                     for corner_point in CAR.vertices:
                         PIECES_LIST[Car_Chunk_Y+i][Car_Chunk_X+j].wall_collision(CAR,corner_point[0],corner_point[1],0.3)
-                    PIECES_LIST[Ball_Chunk_Y+i][Ball_Chunk_X+j].wall_collision(BALL,BALL.posx,BALL.posy, 0.4,elasticity=1)
+                    PIECES_LIST[Ball_Chunk_Y+i][Ball_Chunk_X+j].wall_collision(BALL,BALL.posx,BALL.posy, coll_thresh=1.5,elasticity=1)
                         #DRAW WALLS AND MAP
         for i in range(-1,2):
             for j in range(-1,2):
@@ -838,41 +878,7 @@ while really_running_i_mean_it:
             really_running_i_mean_it = False
     if really_running_i_mean_it == False: sys.exit(0)
 
-    pygame.display.quit()
-    pygame.mixer.music.stop()
-    Inputs.in_switches[ Inputs.in_switches_dict["esc"] ] = 0
-    #print("\n\n\t\tit worked")
-    importlib.reload(Main_Menu_UI)
 
-    current_level = Main_Menu_UI.menuOutputInfo["level"]
-    window_width = 800
-    window_height = 800
-    camera_stickiness = 5 * pow(10, 6)
-    screen = pygame.Surface((5000, 5000))
-    cam_surface = pygame.display.set_mode((window_width, window_height))
-    pygame.display.set_caption('Press "ESC" to access Menu. Press "R" to reset level')
-
-
-    theme_name = Game_Themes.theme_name_dict[Main_Menu_UI.menuOutputInfo["theme_number"]]
-    print(theme_name)
-    Theme = Game_Themes.Themes[theme_name]
-    putting_green_color = Theme["putting"]
-    grass_color = Theme["grass"]
-    sand_color = Theme["sand"]
-    wall_color = Theme["wall"]
-    sprite_color = Theme["sprite"]
-    text_color = Theme["text"]
-    background_color = Theme["background"]
-    hole_color = [255, 255, 0]
-
-    pygame.mixer.music.load(Theme["song"])
-    pygame.mixer.music.set_volume(Theme["volume"])
-    if Main_Menu_UI.menuOutputInfo["Music"]: pygame.mixer.music.play(-1)
-
-    reset_to_level(current_level)
-
-    running = True
-    print(running)
 
 
 
