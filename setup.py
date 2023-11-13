@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="Putter's Strokes",
+    name="Mini_Golf_Driving",
     version='1.0',
     packages=find_packages()
 )
