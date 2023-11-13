@@ -10,7 +10,7 @@ from sys import argv
 
 numberOfSelectors = 3
 
-numberOfLevels = 5
+
 
 
 f = open("level_list.txt")
@@ -19,6 +19,7 @@ for i in f:
     break
 
 Level_List = flist
+numberOfLevels = len(Level_List)
 Theme_Name_List = [
     "Defualt Theme", "Desert", "Simple Blue", "Keanu Movie", "Royal Red"
 ]
