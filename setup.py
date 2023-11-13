@@ -1,7 +1,12 @@
 from setuptools import setup, find_packages
 
+APP=["main.py"]
+OPTIONS = {
+    'argv_emulation': True,
+}
+
 setup(
-    name="Mini_Golf_Driving",
-    version='1.0',
-    packages=find_packages()
+    app=APP,
+    options={'py2app':OPTIONS},
+    setup_requires=['py2app','pygame']
 )

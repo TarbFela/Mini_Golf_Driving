@@ -11,6 +11,14 @@ from sys import argv
 numberOfSelectors = 3
 
 numberOfLevels = 5
+
+
+f = open("level_list.txt")
+for i in f:
+    flist = i.split(",")
+    break
+
+Level_List = flist
 Theme_Name_List = [
     "Defualt Theme", "Desert", "Simple Blue", "Keanu Movie", "Royal Red"
 ]
@@ -105,7 +113,7 @@ Instructions2 = Text("Press Enter to change settings or start",window_width/2,wi
 Instructions1.render(menu_screen)
 Instructions2.render(menu_screen)
 
-Level_Name_Text = Text("Choose Level",window_width/2, window_height - 250)
+Level_Name_Text = Text("Level 0",window_width/2, window_height - 250)
 Level_Name_Text.render(menu_screen)
 
 Theme_Name_Text = Text("Choose Theme",window_width/2, window_height - 200)
@@ -134,7 +142,19 @@ while running:
                 if selector_target == 0: #level
                     selectors[0] += sel_increment
                     selectors[0] = selectors[0]%numberOfLevels
-                    Level_Name_Text.change_text("Level "+str(selectors[0]))
+
+                    with open(Level_List[selectors[0]], newline='') as csvfile:
+                        csvreader = csv.reader(csvfile, delimiter=' ', quotechar='|')
+                        for i, row in enumerate(csvreader):
+                            if i == 0:  # ONLY THE FIRST LINE
+                                first_line_text = ""
+                                for word in row:
+                                    first_line_text += word + " "
+                                first_line_text_list = first_line_text.split(",")
+                                level_name = first_line_text_list[0]
+                                break
+
+                    Level_Name_Text.change_text(str(level_name))
                     pygame.draw.rect(menu_screen, background_color, [ 0, 80, 150,600 ]) #cheap erase
                     DisplayStats(selectors[0],"scores",window_width/2 - 350, 100)
                     pygame.draw.rect(menu_screen, background_color, [window_width-180, 80, 250, 600])  # cheap erase

@@ -74,9 +74,12 @@ color_disp_const = 40 #doesn't work lol
 
 
 #LEVELS INFO
-Level_List = [
-    "game_map_0.csv", "game_map_1.csv", "game_map_2.csv", "game_map_3.csv", "game_map_4.csv"
-]
+f = open("level_list.txt")
+for i in f:
+    flist = i.split(",")
+    break
+
+Level_List = flist
 
 total_time_score = 0
 total_score =0
@@ -280,7 +283,7 @@ def reset_to_level(level = 0):
                 level_par = int(first_line_text_list[0]) + (3 - DIFFICULTY)
                 del first_line_text_list[0]
                 other_level_text = []
-                other_level_text.append("Level " + level_name)
+                other_level_text.append(level_name)
                 other_level_text.append("par " + str(level_par))
                 other_level_text_positions = []
                 for n, text in enumerate(first_line_text_list):
