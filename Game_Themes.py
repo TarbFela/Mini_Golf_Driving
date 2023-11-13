@@ -17,7 +17,8 @@ Themes = {"Default_Theme" : {
         'text': [125,188,89],
         'background': [40,40,40],
         'ball': [0,0,0],
-        'hole': [50, 50, 50]
+        'hole': [50, 50, 50],
+        'grass_icon': "grass.png"
     },
     
     "The_Desert" : { #THESE ARE HORRENDOUS!
@@ -30,7 +31,8 @@ Themes = {"Default_Theme" : {
         "sand": [173, 127, 92],
         "text": [102, 78, 76],
         "sprite": [82, 2 ,2],
-        "hole": [13, 19, 33]
+        "hole": [13, 19, 33],
+        'grass_icon': "desert_grass.png"
     },
     
     "Simple_Blue" : {
@@ -43,7 +45,8 @@ Themes = {"Default_Theme" : {
         "sand": [116, 140, 171],
         "text": [21, 32, 51],
         "sprite": [240, 235, 216],
-        "hole": [13, 19, 33]
+        "hole": [13, 19, 33],
+        'grass_icon': "blue_grass.png"
     },
     
     "The_Matrix" : {
@@ -56,7 +59,8 @@ Themes = {"Default_Theme" : {
         "sand": [60, 60, 60],
         "text": [35, 235, 0],
         "sprite": [35, 235, 0],
-        "hole": [0, 0, 0]
+        "hole": [0, 0, 0],
+        'grass_icon': "grass.png"
     },
     
     "Royal_Red" : {
@@ -69,6 +73,7 @@ Themes = {"Default_Theme" : {
         "sand": [188, 57, 8],
         "text": [227, 197, 175],
         "sprite": [227, 197, 175],
-        "hole": [0, 0, 0]
+        "hole": [0, 0, 0],
+        "grass_icon": "royal_grass.png"
     } }
 

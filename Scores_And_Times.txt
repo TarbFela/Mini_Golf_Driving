@@ -16,8 +16,8 @@ level 7 scores: 0
 level 7 times: 0
 level 8 scores: 0
 level 8 times: 0
-level 9 scores: 0
-level 9 times: 0
+level 9 scores: 0, 0
+level 9 times: 0, 75
 level 10 scores: 0
 level 10 times: 0
 level 11 scores: 0

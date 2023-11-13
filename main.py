@@ -68,7 +68,6 @@ hole_sucking_radius_factor = math.floor(10/DIFFICULTY)
 control_to_speed_coeff = 0.9
 color_disp_const = 40 #doesn't work lol
 
-#COLOR PALLETES
 
 
 
@@ -259,6 +258,12 @@ def draw_rect_angle(surface, color, rect, angle, width=0):
 def reset_to_level(level = 0):
     level_file_name = Level_List[current_level]
     pygame.display.set_caption('Press "ESC" to access Menu. Press "R" to reset level')
+
+    # GRASS ICONS
+    global grass_img
+    grass_img = pygame.image.load(grass_icon).convert_alpha()
+    grass_img = pygame.transform.scale(grass_img,(10,10))
+
     global map_matrix, first_line_text, \
         first_line_text_list, level_name, level_par, \
         other_level_text, other_level_text_positions, \
@@ -583,6 +588,7 @@ class Text(Sprite):
 
 class MapPiece:
     def __init__(self,index,rx,ry,grid_index_pair):
+        self.has_grass = 0
         self.lib_index = index
         self.relx = rx
         self.rely = ry
@@ -591,6 +597,12 @@ class MapPiece:
             if WallPieceLib[index][-1] == "whole":
                 self.fill_mode = "whole"
                 self.fill_color = grass_color
+                self.grass_icon_posx = []
+                self.grass_icon_posy = []
+                for i in range(0, random.randint(0,2)):
+                    self.grass_icon_posx.append(random.randint(10,90) / 100)
+                    self.grass_icon_posy.append(random.randint(10,90) / 100)
+                    self.has_grass += 1
             if WallPieceLib[index][-1] == "sand_whole":
                 self.drag_scale = 8
                 self.fill_mode = "whole"
@@ -650,6 +662,7 @@ class MapPiece:
         pygame.draw.rect(screen, fill_color,rect=(
             b_c[0],b_c[1],map_piece_gridding_size,map_piece_gridding_size
         ))
+        self.draw_grass_icons(b_c)
     def fill_shape(self,b_c,index,under_over,fill_color=[54,129,10]): #only works for triangles at the moment (that is, ONE line)
 
         for i in range(0, WallPieceLib[index][1]):
@@ -679,6 +692,11 @@ class MapPiece:
             (x1, y1),
             (x2, y2),
         ])
+    def draw_grass_icons(self,b_c):
+        for grass in range(0,self.has_grass):
+            iconx = float(self.grass_icon_posx[grass]) * map_piece_gridding_size + b_c[0]
+            icony = float(self.grass_icon_posy[grass]) * map_piece_gridding_size + b_c[1]
+            screen.blit(grass_img,(iconx,icony))
     def wall_collision(self,other,other_x,other_y,coll_thresh,elasticity=1):
         other_x
         other_y
@@ -797,6 +815,7 @@ while really_running_i_mean_it:
     text_color = Theme["text"]
     background_color = Theme["background"]
     hole_color = [255, 255, 0]
+    grass_icon = Theme["grass_icon"]
 
     pygame.mixer.music.load(Theme["song"])
     pygame.mixer.music.set_volume(Theme["volume"])
