@@ -94,12 +94,12 @@ def DisplayStats(level,mode,x,y,surface=menu_screen,erase=False):
 
     stats_list = scores_and_times(level,mode=mode)
     stats_list.sort()
-    stats_list.reverse()
+    #stats_list.reverse()
     while 1000000 in stats_list:
         stats_list.remove(1000000)
     stat_header_text = Text( "Lvl" + str(level) + " " + str(mode), x, y, text_font)
     stat_header_text.render(surface)
-    for i, stat in enumerate(stats_list):
+    for i, stat in enumerate(stats_list[2:]):
         stat = Text( str( stat ) , x, y+17*i + 30, tiny_font)
         stat.render(surface)
 
@@ -113,6 +113,13 @@ Instructions2 = Text("Press Enter to change settings or start",window_width/2,wi
 
 Instructions1.render(menu_screen)
 Instructions2.render(menu_screen)
+
+stat_expo_text1 = Text("1 = completed",window_width/2 - 350, 10,font=tiny_font)
+stat_expo_text1.render(menu_screen)
+stat_expo_text2 = Text("2 = at par",window_width/2 - 350, 25,font=tiny_font)
+stat_expo_text2.render(menu_screen)
+stat_expo_text3 = Text("3 = beat par",window_width/2 - 350, 40,font=tiny_font)
+stat_expo_text3.render(menu_screen)
 
 Level_Name_Text = Text("Level 0",window_width/2, window_height - 250)
 Level_Name_Text.render(menu_screen)

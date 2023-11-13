@@ -9,9 +9,9 @@ from setuptools import setup
 
 APP = ['main.py']
 DATA_FILES = ["level_list.txt","game_over.ttf","Game_Pop1.wav","Game_Pop2.wav","Game_Pop3.wav",
-              "Game_Themes.py","Main_Menu_UI.py","Scores_And_Times.py","Game_Bump_1.wav","Game_Bump_2.wav",
-              "kathys_waltz.wav","Free Parking Game Music.wav","Scores_And_Times.txt","sing-sing-sing.wav",
-              "someday-my-prince-will-come.wav"]
+              "Game_Themes.py","Main_Menu_UI.py","Scores_And_Times_Parser.py","Game_Bump_1.wav","Game_Bump_2.wav",
+              "kathys-waltz.wav","Free Parking Game Music.wav","Scores_And_Times.txt","sing-sing-sing.wav",
+              "someday-my-prince-will-come.wav","grass.png","blue_grass.png","desert_grass.png","keanu_grass.png","royal_grass.png"]
 
 f = open("level_list.txt")
 for i in f:
@@ -22,6 +22,9 @@ for item in Level_List:
     DATA_FILES.append(item)
 
 OPTIONS = {}
+
+import Scores_And_Times_Parser
+Scores_And_Times_Parser.clear_scores_and_times()
 
 setup(
     app=APP,

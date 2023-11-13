@@ -82,6 +82,7 @@ Level_List = flist
 
 total_time_score = 0
 total_score =0
+reset_called = False
 
 #PYGAME INIT, FONT, MUSIC, SOUNDS, CAMERA MOVEMENT PARAMS
 pygame.init()
@@ -183,7 +184,7 @@ class Inputs:
         "esc": 15,
         "m": 16
     }
-    fwd_force = 2
+    fwd_force = 5
 
 
     def key_logger(self,key_number,event_type):
@@ -201,8 +202,8 @@ class Inputs:
         # print(self.in_switches[9])
         if self.in_switches[self.in_switches_dict["r"]]:
             print("reset to level",current_level)
-            reset_to_level(current_level)
-            time.sleep(0.5)
+            global reset_called
+            reset_called= True
 
         if self.in_switches[self.in_switches_dict["1"]]:
             self.fwd_force = 1.2
@@ -228,7 +229,7 @@ class Inputs:
                           )
         spacebar = self.in_switches[self.in_switches_dict["space"]]
         target.accelerate(force=0,
-                          drag=0.001*pow(PIECES_LIST[Car_Chunk_Y][Car_Chunk_X].drag_scale,0.6)-spacebar*0.0006,
+                          drag=0.002*pow(PIECES_LIST[Car_Chunk_Y][Car_Chunk_X].drag_scale,0.6)*(1-0.7*spacebar),
                           sideways_drag=0.01-spacebar*0.008 )
 
         target.steering(steering_resistance=260 - turn_radius_factor*20,
@@ -259,10 +260,13 @@ def reset_to_level(level = 0):
     level_file_name = Level_List[current_level]
     pygame.display.set_caption('Press "ESC" to access Menu. Press "R" to reset level')
 
+    global reset_called
+    reset_called = False
+
     # GRASS ICONS
     global grass_img
     grass_img = pygame.image.load(grass_icon).convert_alpha()
-    grass_img = pygame.transform.scale(grass_img,(10,10))
+    grass_img = pygame.transform.scale(grass_img,grass_icon_scale)
 
     global map_matrix, first_line_text, \
         first_line_text_list, level_name, level_par, \
@@ -496,12 +500,15 @@ class Sprite:
             self.vy += bounce_force_factor * bounciness * (self.posy - other.posy) / pow((dist+1),2)
             #self.s_color[0] +=1
             if self.ball_is_bounce == 0:
-                self.ball_is_bounce = 50
+                self.ball_is_bounce = 150
                 #print("bonce")
                 return 1
             else:
                 return 0
-        if self.ball_is_bounce > 0: self.ball_is_bounce += -1
+        if self.ball_is_bounce > 1: self.ball_is_bounce += -1
+        elif self.ball_is_bounce == 1:
+            print("bounce countdown reset")
+            self.ball_is_bounce += -1
         return 0
     in_the_hole_countdown = 0
     def ball_hole_interaction(self,other):
@@ -532,9 +539,17 @@ class Sprite:
                     #shutil.rmtree(folder_file_path,ignore_errors=True)
                     sys.exit()
                 All_Text.append(Text("Hole in "+str(BOUCNE_COUNTER),self.posx,self.posy+30))
-                points_from_par = int(level_par) - BOUCNE_COUNTER
+                '''points_from_par = int(level_par) - BOUCNE_COUNTER
 
-                if points_from_par < 0: points_from_par = 0
+                if points_from_par < 0: points_from_par = 0'''
+
+                lp = int(level_par)
+                if BOUCNE_COUNTER > lp:
+                    points_from_par = 1
+                elif BOUCNE_COUNTER == lp:
+                    points_from_par = 2
+                else:
+                    points_from_par = 3
                 All_Text.append(Text(str(points_from_par)+" Points", self.posx,self.posy + 50))
 
                 t = time.localtime()
@@ -600,8 +615,8 @@ class MapPiece:
                 self.grass_icon_posx = []
                 self.grass_icon_posy = []
                 for i in range(0, random.randint(0,2)):
-                    self.grass_icon_posx.append(random.randint(10,90) / 100)
-                    self.grass_icon_posy.append(random.randint(10,90) / 100)
+                    self.grass_icon_posx.append(random.randint(30,70) / 100)
+                    self.grass_icon_posy.append(random.randint(30,70) / 100)
                     self.has_grass += 1
             if WallPieceLib[index][-1] == "sand_whole":
                 self.drag_scale = 8
@@ -799,7 +814,7 @@ while really_running_i_mean_it:
     current_level = Main_Menu_UI.menuOutputInfo["level"]
     window_width = 800
     window_height = 800
-    camera_stickiness = 5 * pow(10, 6)
+    camera_stickiness = 10 * pow(10, 5)
     screen = pygame.Surface((5000, 5000))
     cam_surface = pygame.display.set_mode((window_width, window_height))
     pygame.display.set_caption('Press "ESC" to access Menu. Press "R" to reset level')
@@ -816,6 +831,8 @@ while really_running_i_mean_it:
     background_color = Theme["background"]
     hole_color = [255, 255, 0]
     grass_icon = Theme["grass_icon"]
+    grass_icon_scale = Theme['grass scale']
+
 
     pygame.mixer.music.load(Theme["song"])
     pygame.mixer.music.set_volume(Theme["volume"])
@@ -841,7 +858,8 @@ while really_running_i_mean_it:
             if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
                 # print(event.type,event.key) #turn this on to learn what key number in being pressed down!
                 Inputs.key_logger(Inputs,event.key,event.type)
-        for phys_frame in range(0,int(15/perf_const)):
+                                                                #PHYSICS LOOP
+        for phys_frame in range(0,int(10)):
             phys_clock.tick()
                                                             # UPDATE LOCATION
             CAR.move()
@@ -858,12 +876,18 @@ while really_running_i_mean_it:
                 BOUCNE_COUNTER += 1
                 pygame.mixer.Sound.play(hit_sounds[random.randint(0,2)])
 
+
+
                                                             # WALL COLLISIONS, SQUARE DRAWS
             for i in range(-1,2):
                 for j in range(-1,2):
                     for corner_point in CAR.vertices:
-                        PIECES_LIST[Car_Chunk_Y+i][Car_Chunk_X+j].wall_collision(CAR,corner_point[0],corner_point[1],0.3)
+                        PIECES_LIST[Car_Chunk_Y+i][Car_Chunk_X+j].wall_collision(CAR,corner_point[0],corner_point[1],coll_thresh=0.9)
                     PIECES_LIST[Ball_Chunk_Y+i][Ball_Chunk_X+j].wall_collision(BALL,BALL.posx,BALL.posy, coll_thresh=1.5,elasticity=1)
+
+            # INPUTS
+            Inputs.car_input_actions(Inputs, CAR, not (recent_bump))
+            BALL.accelerate(force=0, drag=0.0004 * PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].drag_scale)
                         #DRAW WALLS AND MAP
         for i in range(-1,2):
             for j in range(-1,2):
@@ -884,6 +908,9 @@ while really_running_i_mean_it:
         # CAR.render_path_predictor(100)
         CAR.render()
         BALL.render(shape="ball")
+        if reset_called:
+            reset_to_level(current_level)
+            time.sleep(0.2)
                                                         # UPDATE DISPLAY
         window_center_x +=  pow((CAR.posx - window_center_x), 3)/camera_stickiness
         window_center_y += pow((CAR.posy - window_center_y) , 3)/ camera_stickiness
@@ -893,7 +920,7 @@ while really_running_i_mean_it:
 
         pygame.display.flip()
 
-        game_clock.tick_busy_loop(80*perf_const,)
+        game_clock.tick_busy_loop(60)
         game_clock.tick()
         '''if not(frame%200):
             for row in PIECES_LIST:
@@ -902,8 +929,7 @@ while really_running_i_mean_it:
                     entry.draw_fill_in()'''
 
         # APPLY FORCES ACCORDING TO INPUTS, DRAG, ETC
-        Inputs.car_input_actions(Inputs, CAR, not (recent_bump))
-        BALL.accelerate(force=0, drag=0.0004 * PIECES_LIST[Ball_Chunk_Y][Ball_Chunk_X].drag_scale)
+
 
         #print( dist( (CAR.vx , CAR.vy), (0,0) ) )
 
