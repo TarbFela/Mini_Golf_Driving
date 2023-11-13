@@ -728,8 +728,15 @@ WallPieceLib = [
     ["9Green",0,"whole"],
     ["10Sand",0,"sand_whole"],
     ["11Putting_Green",0,"putting_whole"],
-    ["12EqualSign",2,(0,1),(1,1),(0,0),(1,0),"whole"]
-    ]
+    ["12EqualSign",2,(0,1),(1,1),(0,0),(1,0),"whole"],
+    ["13RTri_90BL", 2, (0, 1), (1, 1), (1, 0), (1, 1), ],
+    ["14upperfilled", 1, (0, 0), (1, 0)],
+    ["15loweredgefilled", 1, (0, 1), (1, 1)],
+    ["16LEFTANDUPPER", 2, (0, 0), (0, 1), (0, 0), (1, 0)],
+    ["17Rightfilled", 1, (1, 0), (1, 1), "whole"],
+    ["18leftfilled", 1, (0, 0), (0, 1), "whole"],
+    ["19twovertlines", 2, (1, 0), (1, 1), (0, 0), (0, 1), "whole"]
+]
 
 css_to_nums_dict = {
     "_" : 6,
@@ -742,7 +749,14 @@ css_to_nums_dict = {
     ".":0,
     "S":10,
     "P":11,
-    "=":12
+    "=":12,
+    "L": 13,
+    "U": 14,
+    "q": 15,
+    'k': 16,
+    "a": 17,
+    "T": 18,
+    "}": 19
 }
 
 

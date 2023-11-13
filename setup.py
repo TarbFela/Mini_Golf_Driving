@@ -8,11 +8,19 @@ Usage:
 from setuptools import setup
 
 APP = ['main.py']
-DATA_FILES = ["level_list.txt","game_map_0.csv","game_map_1.csv","game_map_2.csv",
-              "game_map_3.csv","game_map_4.csv","game_over.ttf","Game_Pop1.wav","Game_Pop2.wav","Game_Pop3.wav",
+DATA_FILES = ["level_list.txt","game_over.ttf","Game_Pop1.wav","Game_Pop2.wav","Game_Pop3.wav",
               "Game_Themes.py","Main_Menu_UI.py","Scores_And_Times.py","Game_Bump_1.wav","Game_Bump_2.wav",
               "kathys_waltz.wav","Free Parking Game Music.wav","Scores_And_Times.txt","sing-sing-sing.wav",
               "someday-my-prince-will-come.wav"]
+
+f = open("level_list.txt")
+for i in f:
+    flist = i.split(",")
+    break
+Level_List = flist
+for item in Level_List:
+    DATA_FILES.append(item)
+
 OPTIONS = {}
 
 setup(

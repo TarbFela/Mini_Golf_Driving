@@ -1,1 +1,1 @@
-game_map_0.csv,game_map_1.csv,game_map_2.csv,game_map_3.csv,game_map_4.csv
+game_map_0.csv,game_map_1.csv,game_map_2.csv,game_map_3.csv,game_map_4.csv,game_map_5.csv,game_map_6.csv,game_map_7.csv,game_map_8.csv,game_map_9.csv
