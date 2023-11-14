@@ -185,8 +185,6 @@ class Inputs:
         "m": 16
     }
     fwd_force = 5
-
-
     def key_logger(self,key_number,event_type):
         switch = 1- (event_type - pygame.KEYDOWN) # 1 if event is keyup, 0 if keydown
         if key_number in self.viable_ins:
@@ -205,22 +203,13 @@ class Inputs:
             global reset_called
             reset_called= True
 
-        if self.in_switches[self.in_switches_dict["1"]]:
-            self.fwd_force = 1.2
-        elif self.in_switches[self.in_switches_dict["2"]]:
-            self.fwd_force = 1.7
-        elif self.in_switches[self.in_switches_dict["3"]]:
-            self.fwd_force = 2
-                                            #needs bug squashing
+        if self.in_switches[self.in_switches_dict["1"]]: self.fwd_force = 1.2
+        elif self.in_switches[self.in_switches_dict["2"]]: self.fwd_force = 1.7
+        elif self.in_switches[self.in_switches_dict["3"]]: self.fwd_force = 2
         if self.in_switches[self.in_switches_dict["esc"]]:
             global running
             running = False
-            #pygame.display.quit()
-        '''if self.in_switches[self.in_switches_dict["up"]]:
-            for row in PIECES_LIST:
-                for entry in row:
-                    entry.randomize_color()
-                    entry.draw_fill_in()'''
+
 
 
         target.accelerate(force=
